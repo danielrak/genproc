@@ -1,0 +1,75 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# genproc
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+`genproc` turns one-off iterative R procedures (`for`, `lapply()`,
+`purrr::pmap()`, ...) into production-grade workflows by wrapping them
+with orthogonal, composable execution layers. The goal is to make the
+transition from *"a script that works on one case"* to *"a system that
+runs reliably on many cases"* an architectural step, not an improvised
+rewrite.
+
+Two layers are always active:
+
+- **Logged** — each case produces a structured log row with the real
+  traceback (captured via `withCallingHandlers()`) and timing.
+- **Reproducibility** — each run records the R version, loaded package
+  versions, execution environment, the exact mask, and hashes of the
+  file inputs referenced by the mask. Silent non-reproducibility
+  between runs (e.g. an input file changed without its path changing)
+  is flagged to the user.
+
+Further layers are planned and will be composable with the defaults:
+
+- parallel execution
+- non-blocking (background) execution
+- monitored progress
+- error replay
+
+`genproc` has **zero Shiny dependency**. A companion package
+(`genprocShiny`) will later build a UI on top of these functions.
+
+## Status
+
+Early development. The public API is not stable yet. The package is
+not on CRAN.
+
+## Installation
+
+Install the development version from GitHub:
+
+``` r
+# install.packages("pak")
+pak::pak("danielrak/genproc")
+```
+
+## Roadmap (v0.1)
+
+- `from_example_to_function()`: turn an example expression into a
+  parameterized function (AST walker, rewritten modularly so a single
+  human can maintain it without AI assistance).
+- `from_function_to_mask()`: derive an iteration mask from a function
+  signature.
+- `genproc()`: run a function over a mask with the mandatory *logged*
+  and *reproducibility* layers.
+- Stable `case_id` injection, structured log, reproducibility report.
+
+## License
+
+MIT. See [LICENSE.md](LICENSE.md).
