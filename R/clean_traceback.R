@@ -2,9 +2,25 @@
 #
 # Filters and truncates a raw call stack captured by sys.calls() to
 # produce a human-readable traceback. Removes genproc's internal
-# machinery (tryCatch, withCallingHandlers, do.call, the injected
-# wrapper body) so the user sees only their own code and the functions
-# it called.
+# machinery (tryCatch, withCallingHandlers, the injected wrapper body,
+# R's own error-signalling frames) so the user sees only their own
+# code and the functions it called.
+#
+# === Why match on call HEAD, not deparse text? ===
+#
+# A previous implementation used regex on the deparsed frame text.
+# That was fragile: the deparse of a frame contains its *arguments*,
+# so a frame like ".handleSimpleError(h, msg, call = withCallingHandlers(...))"
+# deparses to text that *contains* "withCallingHandlers" but does NOT
+# start with it — simple anchored or non-anchored patterns then either
+# miss it (too strict) or over-match legitimate user code (too loose).
+#
+# The current implementation inspects `cl[[1]]` — the call's head —
+# directly. For a normal call like `my_func()`, the head is the symbol
+# `my_func`. For anonymous function invocations (e.g. the injected
+# error handler `(function(.__e__){...})(err)`), the head is itself
+# a call object, not a symbol — we use that structural difference to
+# recognize and drop them without ever touching deparsed text.
 
 
 #' Clean a raw traceback from sys.calls()
@@ -21,18 +37,20 @@
 #'   filtering. Frames are numbered sequentially (1 = outermost call).
 #'
 #' @details
-#' ## Filtering rules
+#' ## Filtering strategy
 #'
-#' A frame is removed if its deparsed text matches any of these
-#' patterns:
-#' - R error-handling internals: `tryCatch`, `tryCatchList`,
-#'   `tryCatchOne`, `doTryCatch`, `withCallingHandlers`
-#' - genproc injection: lines containing `.__` (the double-underscore
-#'   convention used by `add_trycatch_logrow()`)
-#' - `do.call(f_logged, ...)` (genproc's internal dispatch)
-#' - `genproc::genproc(` or `genproc(` at the top of the stack
-#' - Error signalling mechanism: `stop()`, `simpleError()`,
-#'   `simpleCondition()`, `.handleSimpleError()`
+#' 1. **Position-based block drop.** The genproc wrapper always nests
+#'    user code inside `tryCatch(withCallingHandlers({ ... }))`. We
+#'    locate the contiguous block of frames whose head is one of
+#'    `tryCatch`, `tryCatchList`, `tryCatchOne`, `doTryCatch`,
+#'    `withCallingHandlers` and drop it wholesale.
+#' 2. **Symbol-based signal drop.** Frames whose head is a symbol in
+#'    `{simpleError, simpleCondition, .handleSimpleError,
+#'    .signalCondition, signalCondition}` are dropped — these are R's
+#'    error-signalling mechanism, not a cause.
+#' 3. **Anonymous-function-call drop.** Frames whose head is not a
+#'    symbol (e.g. `(function(.__e__){...})(err)`) are dropped. In
+#'    practice these are always genproc's injected handlers.
 #'
 #' ## Formatting
 #'
@@ -43,46 +61,63 @@
 clean_traceback <- function(calls, max_width = 120L) {
   if (length(calls) == 0) return(NA_character_)
 
-  # Deparse each call to a single-line string
+  # --- Extract each frame's head (the function being called) ---
+  heads <- lapply(calls, function(cl) {
+    if (length(cl) == 0L) NULL else cl[[1L]]
+  })
+  head_is_symbol <- vapply(heads, is.symbol, logical(1))
+  head_names <- vapply(seq_along(heads), function(i) {
+    if (isTRUE(head_is_symbol[i])) as.character(heads[[i]]) else NA_character_
+  }, character(1))
+
+  # --- Drop the tryCatch/withCallingHandlers machinery block ---
+  machinery_fns <- c(
+    "tryCatch", "tryCatchList", "tryCatchOne",
+    "doTryCatch", "withCallingHandlers"
+  )
+  machinery_idx <- which(!is.na(head_names) & head_names %in% machinery_fns)
+
+  if (length(machinery_idx) > 0L) {
+    drop_range <- seq(min(machinery_idx), max(machinery_idx))
+    keep_idx <- setdiff(seq_along(calls), drop_range)
+    calls <- calls[keep_idx]
+    head_names <- head_names[keep_idx]
+    head_is_symbol <- head_is_symbol[keep_idx]
+  }
+
+  # --- Drop R error-signalling internals ---
+  signal_fns <- c(
+    "simpleError", "simpleCondition",
+    ".handleSimpleError", ".signalCondition", "signalCondition"
+  )
+  is_signal <- !is.na(head_names) & head_names %in% signal_fns
+
+  # --- Drop anonymous-function invocations (genproc's injected handlers) ---
+  is_anon_fn_call <- !head_is_symbol
+
+  keep <- !(is_signal | is_anon_fn_call)
+  calls <- calls[keep]
+
+  if (length(calls) == 0L) return(NA_character_)
+
+  # --- Deparse surviving frames ---
   lines <- vapply(calls, function(cl) {
     paste(deparse(cl, width.cutoff = 500L), collapse = " ")
   }, character(1))
 
-  # --- Filter out internal frames ---
-  # Pattern 1: R error-handling internals
-  is_internal <- grepl(
-    "^(tryCatch|tryCatchList|tryCatchOne|doTryCatch|withCallingHandlers)\\(",
-    lines
-  )
+  # --- Safety net: drop any line that still leaks internal markers ---
+  # Defensive belt-and-braces. Shouldn't fire given the structural
+  # filtering above, but it guarantees the invariant.
+  leak <- grepl("withCallingHandlers\\(|[`.]__[A-Za-z]", lines)
+  lines <- lines[!leak]
 
-  # Pattern 2: genproc injected code (.__variables__)
-  is_injected <- grepl("\\.__[a-zA-Z]", lines)
-
-  # Pattern 3: do.call(f_logged, ...) — genproc's internal iteration
-  is_docall <- grepl("^do\\.call\\(f_logged", lines)
-
-  # Pattern 4: genproc() or genproc::genproc() at the top
-  is_genproc_call <- grepl("^(genproc::)?genproc\\(", lines)
-
-  # Pattern 5: error signalling internals (stop, simpleError, simpleCondition)
-  # These are the mechanism, not the cause — the user cares about what
-  # called stop(), not stop() itself.
-  is_signal <- grepl(
-    "^(stop|simpleError|simpleCondition|\\.handleSimpleError)\\(",
-    lines
-  )
-
-  keep <- !(is_internal | is_injected | is_docall |
-              is_genproc_call | is_signal)
-  lines <- lines[keep]
-
-  if (length(lines) == 0) return(NA_character_)
+  if (length(lines) == 0L) return(NA_character_)
 
   # --- Truncate long lines ---
   too_long <- nchar(lines) > max_width
-  lines[too_long] <- paste0(substr(lines[too_long], 1, max_width - 4), " ...")
+  lines[too_long] <- paste0(substr(lines[too_long], 1L, max_width - 4L), " ...")
 
-  # --- Number frames (most recent = 1, i.e. bottom-up reading order) ---
+  # --- Number frames (1 = outermost) ---
   n <- length(lines)
   numbered <- paste0(seq_len(n), ". ", lines)
 
