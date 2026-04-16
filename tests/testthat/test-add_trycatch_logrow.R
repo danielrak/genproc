@@ -146,7 +146,8 @@ test_that("works with default argument values", {
 
 test_that("string arguments are stored correctly in log", {
   fn <- add_trycatch_logrow(function(path) readLines(path))
-  result <- fn("/nonexistent/file.txt")
+  # readLines on a nonexistent file emits a warning before the error
+  result <- suppressWarnings(fn("/nonexistent/file.txt"))
 
   expect_equal(result$path, "/nonexistent/file.txt")
   expect_false(result$success)

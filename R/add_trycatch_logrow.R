@@ -121,7 +121,14 @@ add_trycatch_logrow <- function(f) {
     # --- Build log row ---
     .__success__ <- is.na(.__captured_error_msg__)
 
-    .__log__ <- as.data.frame(.__args__, stringsAsFactors = FALSE)
+    # Build a one-row data.frame from arguments.
+    # When there are no arguments, as.data.frame(list()) gives 0 rows,
+    # so we need a fallback to ensure exactly 1 row.
+    if (length(.__args__) > 0) {
+      .__log__ <- as.data.frame(.__args__, stringsAsFactors = FALSE)
+    } else {
+      .__log__ <- data.frame(.row = 1L)[, -1L, drop = FALSE]
+    }
     .__log__$success <- .__success__
     .__log__$error_message <- .__captured_error_msg__
     .__log__$traceback <- .__captured_traceback__
