@@ -244,13 +244,24 @@ execute_cases <- function(f_logged, args_list, parallel) {
   # --- Parallel path ---
   # Requires future and future.apply (declared in Imports).
 
-  # Temporarily install a plan if the spec asked for one; restore on
-  # exit. If `strategy` is NULL, the caller's current plan is used.
-  if (!is.null(parallel$strategy)) {
-    if (parallel$strategy == "sequential" || is.null(parallel$workers)) {
-      oplan <- future::plan(parallel$strategy)
+  # Effective strategy. If the user passed `workers` but no `strategy`,
+  # default to "multisession" — the portable, user-friendly choice.
+  # Without this default, `workers` would be silently ignored whenever
+  # the caller's current future::plan() is the session default
+  # (sequential), which is the most common UX footgun in this layer.
+  effective_strategy <- parallel$strategy
+  if (is.null(effective_strategy) && !is.null(parallel$workers)) {
+    effective_strategy <- "multisession"
+  }
+
+  # Temporarily install a plan if we have a strategy to install;
+  # restore on exit. If `effective_strategy` is NULL, the caller's
+  # current plan is used unchanged (power-user mode).
+  if (!is.null(effective_strategy)) {
+    if (effective_strategy == "sequential" || is.null(parallel$workers)) {
+      oplan <- future::plan(effective_strategy)
     } else {
-      oplan <- future::plan(parallel$strategy, workers = parallel$workers)
+      oplan <- future::plan(effective_strategy, workers = parallel$workers)
     }
     on.exit(future::plan(oplan), add = TRUE)
   }
