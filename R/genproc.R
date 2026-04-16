@@ -23,7 +23,8 @@
 #'   Names are current parameter names, values are new names matching
 #'   `mask` columns.
 #'
-#' @return A list with components:
+#' @return An object of class `genproc_result` (a named list) with
+#'   components:
 #'   \describe{
 #'     \item{log}{A data.frame with one row per case. Contains all
 #'       parameter values, plus `case_id`, `success`, `error_message`,
@@ -35,7 +36,17 @@
 #'     \item{n_error}{Integer, number of failed cases.}
 #'     \item{duration_total_secs}{Numeric, total wall-clock time for
 #'       the entire run.}
+#'     \item{status}{Character. `"done"` for synchronous runs.
+#'       Future execution layers (non-blocking) may return
+#'       `"running"` or `"error"` here.}
 #'   }
+#'
+#'   The `genproc_result` class is designed for forward compatibility.
+#'   Existing fields (`log`, `reproducibility`, `n_success`, `n_error`,
+#'   `duration_total_secs`) are guaranteed stable. Future versions may
+#'   add new fields (e.g. `worker_id` in the log for parallel runs,
+#'   or `collect()`/`poll()` methods for non-blocking execution) but
+#'   will never remove or rename existing ones.
 #'
 #' @details
 #' ## Execution model (v0.1)
@@ -176,11 +187,15 @@ genproc <- function(f, mask, f_mapping = NULL) {
   n_error <- sum(!log$success)
 
   # --- Return structured result ---
-  list(
-    log                = log,
-    reproducibility    = repro,
-    n_success          = n_success,
-    n_error            = n_error,
-    duration_total_secs = run_end - run_start
+  structure(
+    list(
+      log                = log,
+      reproducibility    = repro,
+      n_success          = n_success,
+      n_error            = n_error,
+      duration_total_secs = run_end - run_start,
+      status             = "done"
+    ),
+    class = "genproc_result"
   )
 }
