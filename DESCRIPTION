@@ -1,5 +1,5 @@
 Package: genproc
-Title: Composable Execution Layers for Iterative R Procedures
+Title: Robust, Logged and Reproducible Iteration at Organizational Scale
 Version: 0.0.0.9000
 Authors@R:
     person("Daniel", "Rakotomalala", , "rakdanielh@gmail.com", role = c("aut", "cre"))
