@@ -197,7 +197,7 @@ rewrite_symbol <- function(node, ctx) {
 #'
 #' where `result` must not be parameterized in `nrow(result)`.
 #'
-#' @param node A call with head `{`.
+#' @param node A call with head \code{\{} (a block).
 #' @param ctx  Rewrite context.
 #' @return The rewritten block call.
 #'

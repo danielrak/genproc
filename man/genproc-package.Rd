@@ -4,7 +4,7 @@
 \name{genproc-package}
 \alias{genproc}
 \alias{genproc-package}
-\title{genproc: composable execution layers for iterative R procedures}
+\title{genproc: robust, logged and reproducible iteration at organizational scale}
 \description{
 The \code{genproc} package wraps classical iteration constructs
 (\code{for}, \code{\link[base:lapply]{base::lapply()}}, \code{\link[purrr:pmap]{purrr::pmap()}}, ...) with orthogonal
