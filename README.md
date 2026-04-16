@@ -45,8 +45,8 @@ on CRAN.
 Install the development version from GitHub:
 
 ``` r
-# install.packages("pak")
-pak::pak("danielrak/genproc")
+# install.packages("remotes")
+remotes::install_github("danielrak/genproc")
 ```
 
 ## Roadmap (v0.1)
