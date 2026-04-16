@@ -78,25 +78,32 @@ from_function_to_mask <- function(f) {
   values <- vector("list", length(fmls))
   names(values) <- names(fmls)
 
-  # Sentinel: a missing formal default in R is an object that errors
-  # when accessed directly in some R versions. We detect it safely
-  # with tryCatch around identical().
-  .missing_sentinel <- alist(.x = )$.x
-
   for (nm in names(fmls)) {
-    # Check for missing default without triggering "argument is missing".
-    # tryCatch catches the error if fmls[[nm]] cannot be accessed.
-    is_missing <- tryCatch(
-      identical(fmls[[nm]], .missing_sentinel),
-      error = function(e) TRUE
+    # Safely extract the formal's default value.
+    # In some R versions, accessing a formal with no default via
+    # fmls[[nm]] errors ("argument is missing, with no default").
+    # We wrap extraction in tryCatch and transport the value inside
+    # a list to prevent the "missing" status from propagating.
+    extracted <- tryCatch(
+      {
+        v <- fmls[[nm]]
+        # Successfully accessed. Check for the empty symbol case
+        # (how R internally stores missing defaults in some versions).
+        if (is.symbol(v) && !nzchar(as.character(v))) {
+          list(is_missing = TRUE)
+        } else {
+          list(is_missing = FALSE, val = v)
+        }
+      },
+      error = function(e) list(is_missing = TRUE)
     )
 
-    if (is_missing) {
+    if (extracted$is_missing) {
       values[[nm]] <- NA
       next
     }
 
-    val <- fmls[[nm]]
+    val <- extracted$val
 
     # Named symbol (e.g. function(x = some_var) ...) — treat as missing
     # since the symbol may not be resolvable at mask-creation time
