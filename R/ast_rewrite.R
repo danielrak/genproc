@@ -326,8 +326,10 @@ rewrite_call <- function(node, ctx) {
 
   if (length(args) >= 2) {
     for (i in seq.int(2, length(args))) {
-      if (!is_missing_arg_node(args[[i]])) {
-        args[[i]] <- rewrite_node(args[[i]], ctx)
+      arg <- args[[i]]
+      # NULL elements and missing argument placeholders are left as-is
+      if (!is.null(arg) && !is_missing_arg_node(arg)) {
+        args[[i]] <- rewrite_node(arg, ctx)
       }
     }
   }
