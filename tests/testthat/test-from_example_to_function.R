@@ -318,3 +318,87 @@ test_that("expression with only a string literal", {
   expect_length(formals(fn), 1)
   expect_equal(formals(fn)$param_1, "hello")
 })
+
+
+# === Integration tests (ported from genprocShiny) =============================
+# These require purrr, dplyr, magrittr and are skipped if not installed.
+
+test_that("pipe + lambda expression produces correct parameters", {
+  skip_if_not_installed("purrr")
+  skip_if_not_installed("dplyr")
+  skip_if_not_installed("magrittr")
+
+  # Attach pipe and functions into lookup environment
+  e <- new.env(parent = globalenv())
+
+  fn <- from_example_to_function(
+    expression({
+      get("cars") %>% select(1) %>% (\(x) pull(x, names(x)[[1]])) %>%
+        paste0(collapse = " test ") %>%
+        (\(p) {
+          x <- "test2"
+          list(is.numeric(x), p)
+        })
+    }),
+    env = e
+  )
+
+  fmls <- formals(fn)
+
+  # "cars", " test ", "test2" = 3 string parameters
+  expect_length(fmls, 3)
+  expect_equal(fmls$param_1, "cars")
+  expect_equal(fmls$param_2, " test ")
+  expect_equal(fmls$param_3, "test2")
+
+  # p and x are locally bound -> must NOT appear as parameters
+  expect_false("p" %in% names(fmls))
+  expect_false("x" %in% names(fmls))
+
+  # Body should still contain the pipe operator
+  body_str <- paste(deparse(body(fn)), collapse = " ")
+  expect_true(grepl("%>%", body_str))
+})
+
+test_that("generated function executes correctly with swapped parameters", {
+  skip_if_not_installed("purrr")
+  skip_if_not_installed("dplyr")
+  skip_if_not_installed("magrittr")
+
+  e <- new.env(parent = globalenv())
+
+  fn <- from_example_to_function(
+    expression({
+      map(c("cars", "mtcars"), get) %>%
+        map(mutate_all, as.character)
+    }),
+    env = e
+  )
+
+  # Structure check: 2 parameters (the two dataset name strings)
+  fmls <- formals(fn)
+  expect_length(fmls, 2)
+  expect_equal(fmls$param_1, "cars")
+  expect_equal(fmls$param_2, "mtcars")
+
+  # Execution with default parameters
+  result_default <- fn()
+  expect_true(is.list(result_default))
+  expect_length(result_default, 2)
+  expect_s3_class(result_default[[1]], "data.frame")
+  expect_s3_class(result_default[[2]], "data.frame")
+  expect_equal(nrow(result_default[[1]]), nrow(cars))
+  expect_equal(nrow(result_default[[2]]), nrow(mtcars))
+
+  # Execution with swapped parameters
+  result_swapped <- fn(param_1 = "airquality", param_2 = "anscombe")
+  expect_true(is.list(result_swapped))
+  expect_length(result_swapped, 2)
+  expect_s3_class(result_swapped[[1]], "data.frame")
+  expect_s3_class(result_swapped[[2]], "data.frame")
+  expect_equal(nrow(result_swapped[[1]]), nrow(airquality))
+  expect_equal(nrow(result_swapped[[2]]), nrow(anscombe))
+  # All columns should be character (mutate_all(as.character))
+  expect_true(all(sapply(result_swapped[[1]], is.character)))
+  expect_true(all(sapply(result_swapped[[2]], is.character)))
+})
