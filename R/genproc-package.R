@@ -1,4 +1,4 @@
-#' genproc: composable execution layers for iterative R procedures
+#' genproc: robust, logged and reproducible iteration at organizational scale
 #'
 #' The `genproc` package wraps classical iteration constructs
 #' (`for`, [base::lapply()], [purrr::pmap()], ...) with orthogonal

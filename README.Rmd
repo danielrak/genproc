@@ -18,12 +18,13 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-`genproc` turns one-off iterative R procedures (`for`, `lapply()`,
-`purrr::pmap()`, ...) into production-grade workflows by wrapping them
-with orthogonal, composable execution layers. The goal is to make the
-transition from *"a script that works on one case"* to *"a system that
-runs reliably on many cases"* an architectural step, not an improvised
-rewrite.
+`genproc` provides robust, logged and reproducible iteration at
+organizational scale. It turns one-off iterative R procedures (`for`,
+`lapply()`, `purrr::pmap()`, ...) into production-grade workflows by
+wrapping them with orthogonal, composable execution layers. The goal is
+to make the transition from *"a script that works on one case"* to *"a
+system that runs reliably on many cases"* an architectural step, not an
+improvised rewrite.
 
 Two layers are always active:
 
