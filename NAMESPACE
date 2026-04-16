@@ -3,4 +3,5 @@
 export(add_trycatch_logrow)
 export(from_example_to_function)
 export(from_function_to_mask)
+export(genproc)
 export(rename_function_params)

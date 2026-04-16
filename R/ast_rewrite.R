@@ -275,8 +275,8 @@ rewrite_function_def <- function(node, ctx) {
 #' parameterized (invariant 1). Only the RHS is rewritten.
 #'
 #' Handles all five operators: `<-`, `=`, `<<-` (left-assignment)
-#' and `->`, `->>` (right-assignment, where the value is node[[2]]
-#' and the target is node[[3]]).
+#' and `->`, `->>` (right-assignment, where the value is `node[[2]]`
+#' and the target is `node[[3]]`).
 #'
 #' @param node An assignment call.
 #' @param ctx  Rewrite context.
@@ -356,16 +356,16 @@ rewrite_expression <- function(node, ctx) {
 #' Route an AST node to the appropriate rewrite handler
 #'
 #' This is the central router. Every `rewrite_*` function above calls
-#' back into [rewrite_node()] for recursive descent.
+#' back into `rewrite_node()` for recursive descent.
 #'
 #' Dispatch order:
-#' 1. character(1)              -> [rewrite_string()]
-#' 2. symbol                    -> [rewrite_symbol()]
-#' 3. expression                -> [rewrite_expression()]
-#' 4. call with head `{`        -> [rewrite_block()]
-#' 5. call with head `function` -> [rewrite_function_def()]
-#' 6. assignment call           -> [rewrite_assignment()]
-#' 7. other call                -> [rewrite_call()]
+#' 1. character(1)              -> `rewrite_string()`
+#' 2. symbol                    -> `rewrite_symbol()`
+#' 3. expression                -> `rewrite_expression()`
+#' 4. call with head `{`        -> `rewrite_block()`
+#' 5. call with head `function` -> `rewrite_function_def()`
+#' 6. assignment call           -> `rewrite_assignment()`
+#' 7. other call                -> `rewrite_call()`
 #' 8. anything else             -> pass through unchanged
 #'
 #' @param node Any R object (AST node).

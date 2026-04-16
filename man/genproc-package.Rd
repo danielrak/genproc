@@ -2,7 +2,6 @@
 % Please edit documentation in R/genproc-package.R
 \docType{package}
 \name{genproc-package}
-\alias{genproc}
 \alias{genproc-package}
 \title{genproc: robust, logged and reproducible iteration at organizational scale}
 \description{

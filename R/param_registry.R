@@ -37,7 +37,7 @@ new_param_registry <- function() {
 #' without creating a duplicate. Otherwise, generates a new name
 #' (param_1, param_2, ...) and records the default value.
 #'
-#' @param registry A parameter registry (from [new_param_registry()]).
+#' @param registry A parameter registry (from `new_param_registry()`).
 #' @param key Character(1). A unique key for deduplication. Convention:
 #'   `"chr:<value>"` for string literals, `"sym:<name>"` for symbols.
 #' @param default The default value for this parameter.
