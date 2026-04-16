@@ -25,13 +25,19 @@ test_that("rejects missing param without default and not in mask", {
 
 # === Return structure =========================================================
 
-test_that("returns a list with expected components", {
+test_that("returns a genproc_result with expected components", {
   result <- genproc(function(x) x, data.frame(x = 1))
 
+  expect_s3_class(result, "genproc_result")
   expect_true(is.list(result))
   expected <- c("log", "reproducibility", "n_success",
-                "n_error", "duration_total_secs")
+                "n_error", "duration_total_secs", "status")
   expect_true(all(expected %in% names(result)))
+})
+
+test_that("status is 'done' for synchronous runs", {
+  result <- genproc(function(x) x, data.frame(x = 1))
+  expect_equal(result$status, "done")
 })
 
 test_that("log is a data.frame with one row per case", {
@@ -263,4 +269,17 @@ test_that("mixed success/error pipeline", {
   expect_false(result$log$success[2])
   expect_true(result$log$success[3])
   expect_true(grepl("not found", result$log$error_message[2]))
+})
+
+
+# === print method ==============================================================
+
+test_that("print.genproc_result outputs summary and returns invisibly", {
+  result <- genproc(function(x) x, data.frame(x = c(1, 2, 3)))
+
+  out <- capture.output(ret <- print(result))
+  expect_identical(ret, result)
+  expect_true(any(grepl("genproc result", out)))
+  expect_true(any(grepl("done", out)))
+  expect_true(any(grepl("3", out)))
 })

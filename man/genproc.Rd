@@ -22,7 +22,8 @@ Names are current parameter names, values are new names matching
 \code{mask} columns.}
 }
 \value{
-A list with components:
+An object of class \code{genproc_result} (a named list) with
+components:
 \describe{
 \item{log}{A data.frame with one row per case. Contains all
 parameter values, plus \code{case_id}, \code{success}, \code{error_message},
@@ -34,7 +35,17 @@ timezone, mask snapshot). See \code{capture_reproducibility()}.}
 \item{n_error}{Integer, number of failed cases.}
 \item{duration_total_secs}{Numeric, total wall-clock time for
 the entire run.}
+\item{status}{Character. \code{"done"} for synchronous runs.
+Future execution layers (non-blocking) may return
+\code{"running"} or \code{"error"} here.}
 }
+
+The \code{genproc_result} class is designed for forward compatibility.
+Existing fields (\code{log}, \code{reproducibility}, \code{n_success}, \code{n_error},
+\code{duration_total_secs}) are guaranteed stable. Future versions may
+add new fields (e.g. \code{worker_id} in the log for parallel runs,
+or \code{collect()}/\code{poll()} methods for non-blocking execution) but
+will never remove or rename existing ones.
 }
 \description{
 This is the central function of the genproc package. It takes a
