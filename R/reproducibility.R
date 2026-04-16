@@ -11,11 +11,13 @@
 #   - Loaded packages with their versions
 #   - Timestamp of the run
 #   - Snapshot of the exact mask used
+#   - Parallel execution spec (if any)
 #
-# v0.1 does NOT capture:
+# Not yet captured (planned):
 #   - Hashes of input files referenced in the mask (requires knowing
-#     which columns are file paths — to be discussed)
-#   - Seed state (out of scope per user decision)
+#     which columns are file paths)
+#   - Seed state for non-parallel runs (parallel runs already expose
+#     the master seed through the parallel spec)
 
 
 #' Capture reproducibility information for a genproc run
@@ -25,6 +27,11 @@
 #' [genproc()] and can be compared across runs.
 #'
 #' @param mask The mask data.frame used for this run (stored as-is).
+#' @param parallel `NULL` or a `genproc_parallel_spec` object. When
+#'   supplied, its fields (strategy, workers, seed, chunk_size,
+#'   packages) are recorded in the snapshot so that a parallel run
+#'   can be compared to a sequential one and any parameter drift is
+#'   auditable.
 #' @return A list with components:
 #'   \describe{
 #'     \item{timestamp}{POSIXct, start time of the run.}
@@ -35,16 +42,16 @@
 #'     \item{timezone}{Character, current timezone.}
 #'     \item{packages}{Named character vector: package name -> version.}
 #'     \item{mask_snapshot}{The exact mask data.frame used.}
+#'     \item{parallel}{`NULL` for a sequential run, or a list with the
+#'       parallel spec's fields for a parallel run.}
 #'   }
 #'
 #' @noRd
-capture_reproducibility <- function(mask) {
+capture_reproducibility <- function(mask, parallel = NULL) {
   # System information
   si <- Sys.info()
 
   # Loaded packages (attached + loaded via namespace)
-  # sessionInfo()$otherPkgs gives attached non-base packages
-  # sessionInfo()$loadedOnly gives loaded-but-not-attached
   sess <- utils::sessionInfo()
 
   attached_pkgs <- sess$otherPkgs
@@ -67,6 +74,21 @@ capture_reproducibility <- function(mask) {
 
   all_versions <- c(pkg_versions, base_versions)
 
+  # Normalize parallel spec -> plain list (or NULL).
+  # We drop the class so the snapshot is portable to e.g. JSON/YAML
+  # export in the future without pulling in the class definition.
+  parallel_snapshot <- if (is.null(parallel)) {
+    NULL
+  } else {
+    list(
+      strategy   = parallel$strategy,
+      workers    = parallel$workers,
+      chunk_size = parallel$chunk_size,
+      seed       = parallel$seed,
+      packages   = parallel$packages
+    )
+  }
+
   list(
     timestamp     = Sys.time(),
     r_version     = R.version.string,
@@ -75,6 +97,7 @@ capture_reproducibility <- function(mask) {
     locale        = Sys.getlocale(),
     timezone      = Sys.timezone(),
     packages      = all_versions,
-    mask_snapshot  = mask
+    mask_snapshot = mask,
+    parallel      = parallel_snapshot
   )
 }

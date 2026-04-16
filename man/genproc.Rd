@@ -4,7 +4,7 @@
 \alias{genproc}
 \title{Run a function over a mask with mandatory logging and reproducibility}
 \usage{
-genproc(f, mask, f_mapping = NULL)
+genproc(f, mask, f_mapping = NULL, parallel = NULL)
 }
 \arguments{
 \item{f}{A function to apply to each row of the mask. Each formal
@@ -20,6 +20,11 @@ each column is a parameter value. Can be produced by
 parameters before execution. Passed to \code{\link[=rename_function_params]{rename_function_params()}}.
 Names are current parameter names, values are new names matching
 \code{mask} columns.}
+
+\item{parallel}{\code{NULL} (default, sequential execution) or a
+\code{genproc_parallel_spec} object produced by \code{\link[=parallel_spec]{parallel_spec()}}.
+When supplied, cases are dispatched to workers via
+\code{\link[future.apply:future_lapply]{future.apply::future_lapply()}}.}
 }
 \value{
 An object of class \code{genproc_result} (a named list) with
@@ -30,7 +35,8 @@ parameter values, plus \code{case_id}, \code{success}, \code{error_message},
 \code{traceback}, and \code{duration_secs}.}
 \item{reproducibility}{A list of environment information
 captured at run start (R version, packages, OS, locale,
-timezone, mask snapshot). See \code{capture_reproducibility()}.}
+timezone, mask snapshot, parallel spec if any).
+See \code{capture_reproducibility()}.}
 \item{n_success}{Integer, number of successful cases.}
 \item{n_error}{Integer, number of failed cases.}
 \item{duration_total_secs}{Numeric, total wall-clock time for
@@ -53,19 +59,33 @@ function and an iteration mask (data.frame), calls the function once
 per row of the mask, and returns a structured result with:
 \itemize{
 \item a log data.frame (one row per case, with success/error/traceback/timing)
-\item reproducibility information (R version, packages, environment)
+\item reproducibility information (R version, packages, environment, parallel spec)
 \item the exact mask used
 \item stable case IDs linking log rows to mask rows
 }
 }
 \details{
 The \emph{logged} and \emph{reproducibility} layers are always active and
-cannot be disabled.
-\subsection{Execution model (v0.1)}{
+cannot be disabled. The \emph{parallel} layer is optional: pass a
+\code{\link[=parallel_spec]{parallel_spec()}} to \code{parallel} to enable it.
+\subsection{Execution model}{
 
-Cases are executed \strong{sequentially} in row order. Parallel and
-non-blocking execution will be added in future versions as
-composable, opt-in layers.
+Cases are executed \strong{sequentially} in row order by default. Supply
+\code{parallel = parallel_spec(...)} to dispatch them in parallel via
+the \pkg{future} ecosystem. The logging and reproducibility layers
+remain active in both modes; the parallel layer is strictly
+additive.
+
+Parallel execution preserves the mask row order in the resulting
+\code{log} data.frame, regardless of the order in which workers return.
+
+Parallel execution requires \pkg{genproc} to be installed (not only
+loaded via \code{devtools::load_all()}) on each worker, because the
+logging layer serializes closures whose environments reference
+genproc internals. The only exception is
+\code{parallel_spec(strategy = "sequential")}, which runs in the
+current process and needs nothing extra — this is the recommended
+mode for deterministic testing.
 }
 
 \subsection{Error handling}{
@@ -73,7 +93,8 @@ composable, opt-in layers.
 Errors in individual cases do \strong{not} stop the run. Each case is
 wrapped with \code{\link[=add_trycatch_logrow]{add_trycatch_logrow()}}, which captures the error
 message and the real traceback (via \code{withCallingHandlers}). The
-run continues with the next case.
+run continues with the next case. This holds identically in
+sequential and parallel mode.
 }
 
 \subsection{Case IDs}{
@@ -95,23 +116,30 @@ ignored.
 }
 }
 \examples{
-# Simple example: add two numbers
+# Sequential (default)
 result <- genproc(
   f = function(x, y) x + y,
   mask = data.frame(x = c(1, 2, 3), y = c(10, 20, 30))
 )
 result$log
-result$n_success
 
-# With the full pipeline:
-my_val <- 100
-fn <- from_example_to_function(expression(my_val * 2))
-fn <- rename_function_params(fn, c(param_1 = "value"))
-mask <- data.frame(value = c(1, 5, 10))
-result <- genproc(fn, mask)
+# Parallel — uses whatever future::plan() is currently set
+\dontrun{
+  future::plan(future::multisession, workers = 4)
+  result <- genproc(
+    f = slow_function,
+    mask = big_mask,
+    parallel = parallel_spec(seed = 42L)
+  )
+}
 
-# Using f_mapping (rename at call time):
-fn2 <- from_example_to_function(expression(my_val * 2))
-result2 <- genproc(fn2, mask, f_mapping = c(param_1 = "value"))
+# One-off parallel call, temporary plan, restored on exit
+\dontrun{
+  result <- genproc(
+    f = my_fn,
+    mask = my_mask,
+    parallel = parallel_spec(strategy = "multisession", workers = 4)
+  )
+}
 
 }

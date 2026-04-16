@@ -17,7 +17,9 @@ Description: A framework that turns one-off iterative R procedures (such
 License: MIT + file LICENSE
 URL: https://github.com/danielrak/genproc
 BugReports: https://github.com/danielrak/genproc/issues
-Imports: 
+Imports:
+    future,
+    future.apply,
     utils
 Suggests:
     dplyr,

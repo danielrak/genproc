@@ -4,12 +4,13 @@
 #' function and an iteration mask (data.frame), calls the function once
 #' per row of the mask, and returns a structured result with:
 #' - a log data.frame (one row per case, with success/error/traceback/timing)
-#' - reproducibility information (R version, packages, environment)
+#' - reproducibility information (R version, packages, environment, parallel spec)
 #' - the exact mask used
 #' - stable case IDs linking log rows to mask rows
 #'
 #' The *logged* and *reproducibility* layers are always active and
-#' cannot be disabled.
+#' cannot be disabled. The *parallel* layer is optional: pass a
+#' [parallel_spec()] to `parallel` to enable it.
 #'
 #' @param f A function to apply to each row of the mask. Each formal
 #'   of `f` should correspond to a column in `mask` (or have a default
@@ -22,6 +23,10 @@
 #'   parameters before execution. Passed to [rename_function_params()].
 #'   Names are current parameter names, values are new names matching
 #'   `mask` columns.
+#' @param parallel `NULL` (default, sequential execution) or a
+#'   `genproc_parallel_spec` object produced by [parallel_spec()].
+#'   When supplied, cases are dispatched to workers via
+#'   [future.apply::future_lapply()].
 #'
 #' @return An object of class `genproc_result` (a named list) with
 #'   components:
@@ -31,7 +36,8 @@
 #'       `traceback`, and `duration_secs`.}
 #'     \item{reproducibility}{A list of environment information
 #'       captured at run start (R version, packages, OS, locale,
-#'       timezone, mask snapshot). See `capture_reproducibility()`.}
+#'       timezone, mask snapshot, parallel spec if any).
+#'       See `capture_reproducibility()`.}
 #'     \item{n_success}{Integer, number of successful cases.}
 #'     \item{n_error}{Integer, number of failed cases.}
 #'     \item{duration_total_secs}{Numeric, total wall-clock time for
@@ -49,18 +55,32 @@
 #'   will never remove or rename existing ones.
 #'
 #' @details
-#' ## Execution model (v0.1)
+#' ## Execution model
 #'
-#' Cases are executed **sequentially** in row order. Parallel and
-#' non-blocking execution will be added in future versions as
-#' composable, opt-in layers.
+#' Cases are executed **sequentially** in row order by default. Supply
+#' `parallel = parallel_spec(...)` to dispatch them in parallel via
+#' the \pkg{future} ecosystem. The logging and reproducibility layers
+#' remain active in both modes; the parallel layer is strictly
+#' additive.
+#'
+#' Parallel execution preserves the mask row order in the resulting
+#' `log` data.frame, regardless of the order in which workers return.
+#'
+#' Parallel execution requires \pkg{genproc} to be installed (not only
+#' loaded via `devtools::load_all()`) on each worker, because the
+#' logging layer serializes closures whose environments reference
+#' genproc internals. The only exception is
+#' `parallel_spec(strategy = "sequential")`, which runs in the
+#' current process and needs nothing extra — this is the recommended
+#' mode for deterministic testing.
 #'
 #' ## Error handling
 #'
 #' Errors in individual cases do **not** stop the run. Each case is
 #' wrapped with [add_trycatch_logrow()], which captures the error
 #' message and the real traceback (via `withCallingHandlers`). The
-#' run continues with the next case.
+#' run continues with the next case. This holds identically in
+#' sequential and parallel mode.
 #'
 #' ## Case IDs
 #'
@@ -79,27 +99,34 @@
 #' ignored.
 #'
 #' @examples
-#' # Simple example: add two numbers
+#' # Sequential (default)
 #' result <- genproc(
 #'   f = function(x, y) x + y,
 #'   mask = data.frame(x = c(1, 2, 3), y = c(10, 20, 30))
 #' )
 #' result$log
-#' result$n_success
 #'
-#' # With the full pipeline:
-#' my_val <- 100
-#' fn <- from_example_to_function(expression(my_val * 2))
-#' fn <- rename_function_params(fn, c(param_1 = "value"))
-#' mask <- data.frame(value = c(1, 5, 10))
-#' result <- genproc(fn, mask)
+#' # Parallel — uses whatever future::plan() is currently set
+#' \dontrun{
+#'   future::plan(future::multisession, workers = 4)
+#'   result <- genproc(
+#'     f = slow_function,
+#'     mask = big_mask,
+#'     parallel = parallel_spec(seed = 42L)
+#'   )
+#' }
 #'
-#' # Using f_mapping (rename at call time):
-#' fn2 <- from_example_to_function(expression(my_val * 2))
-#' result2 <- genproc(fn2, mask, f_mapping = c(param_1 = "value"))
+#' # One-off parallel call, temporary plan, restored on exit
+#' \dontrun{
+#'   result <- genproc(
+#'     f = my_fn,
+#'     mask = my_mask,
+#'     parallel = parallel_spec(strategy = "multisession", workers = 4)
+#'   )
+#' }
 #'
 #' @export
-genproc <- function(f, mask, f_mapping = NULL) {
+genproc <- function(f, mask, f_mapping = NULL, parallel = NULL) {
   # --- Input validation ---
   if (!is.function(f)) {
     stop("`f` must be a function.", call. = FALSE)
@@ -109,6 +136,13 @@ genproc <- function(f, mask, f_mapping = NULL) {
   }
   if (nrow(mask) == 0) {
     stop("`mask` must have at least one row.", call. = FALSE)
+  }
+  if (!is.null(parallel) && !inherits(parallel, "genproc_parallel_spec")) {
+    stop(
+      "`parallel` must be NULL or a `genproc_parallel_spec` object ",
+      "produced by parallel_spec().",
+      call. = FALSE
+    )
   }
 
   # --- Optional parameter rename ---
@@ -120,10 +154,8 @@ genproc <- function(f, mask, f_mapping = NULL) {
   f_params <- names(formals(f))
   mask_cols <- names(mask)
 
-  # Determine which params will be supplied from the mask
   params_from_mask <- intersect(f_params, mask_cols)
 
-  # Params not in mask must have defaults
   params_missing <- setdiff(f_params, mask_cols)
   fmls <- formals(f)
   for (p in params_missing) {
@@ -151,24 +183,22 @@ genproc <- function(f, mask, f_mapping = NULL) {
   case_ids <- generate_case_ids(mask)
 
   # --- Capture reproducibility (mandatory layer) ---
-  repro <- capture_reproducibility(mask)
+  repro <- capture_reproducibility(mask, parallel = parallel)
 
-  # --- Sequential execution ---
+  # --- Build per-case argument lists ---
+  args_list <- lapply(seq_len(nrow(mask)), function(i) {
+    as.list(mask[i, params_from_mask, drop = FALSE])
+  })
+
+  # --- Execute ---
   run_start <- proc.time()[["elapsed"]]
-  log_rows <- vector("list", nrow(mask))
+  log_rows <- execute_cases(f_logged, args_list, parallel)
+  run_end <- proc.time()[["elapsed"]]
 
-  for (i in seq_len(nrow(mask))) {
-    # Extract arguments from mask (only columns that match params)
-    args <- as.list(mask[i, params_from_mask, drop = FALSE])
-
-    # Call the logged function
-    log_rows[[i]] <- do.call(f_logged, args)
-
-    # Attach case_id
+  # --- Attach case_id to each row (order is preserved by execute_cases) ---
+  for (i in seq_along(log_rows)) {
     log_rows[[i]]$case_id <- case_ids[i]
   }
-
-  run_end <- proc.time()[["elapsed"]]
 
   # --- Assemble log ---
   log <- do.call(rbind, log_rows)
@@ -197,5 +227,52 @@ genproc <- function(f, mask, f_mapping = NULL) {
       status             = "done"
     ),
     class = "genproc_result"
+  )
+}
+
+
+# Internal dispatcher.
+# Runs `f_logged` over `args_list`, sequentially if `parallel` is NULL,
+# otherwise through future.apply with the fields of `parallel`.
+# Returns a list of one-row data.frames, in input order.
+execute_cases <- function(f_logged, args_list, parallel) {
+  if (is.null(parallel)) {
+    # --- Sequential path ---
+    return(lapply(args_list, function(args) do.call(f_logged, args)))
+  }
+
+  # --- Parallel path ---
+  # Requires future and future.apply (declared in Imports).
+
+  # Temporarily install a plan if the spec asked for one; restore on
+  # exit. If `strategy` is NULL, the caller's current plan is used.
+  if (!is.null(parallel$strategy)) {
+    if (parallel$strategy == "sequential" || is.null(parallel$workers)) {
+      oplan <- future::plan(parallel$strategy)
+    } else {
+      oplan <- future::plan(parallel$strategy, workers = parallel$workers)
+    }
+    on.exit(future::plan(oplan), add = TRUE)
+  }
+
+  # Packages to attach on each worker. For non-sequential strategies we
+  # *must* ensure `genproc` is loaded on the worker so that the logged
+  # closure's environment (which references clean_traceback via the
+  # genproc namespace) resolves correctly after deserialization.
+  is_sequential <- !is.null(parallel$strategy) &&
+    parallel$strategy == "sequential"
+  fpkgs <- if (is_sequential) {
+    parallel$packages
+  } else {
+    unique(c("genproc", parallel$packages))
+  }
+
+  future.apply::future_lapply(
+    X                 = args_list,
+    FUN               = function(args) do.call(f_logged, args),
+    future.seed       = parallel$seed,
+    future.chunk.size = parallel$chunk_size,
+    future.globals    = parallel$globals,
+    future.packages   = fpkgs
   )
 }
