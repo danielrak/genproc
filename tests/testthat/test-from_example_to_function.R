@@ -365,6 +365,12 @@ test_that("generated function executes correctly with swapped parameters", {
   skip_if_not_installed("dplyr")
   skip_if_not_installed("magrittr")
 
+  # Packages must be attached so map/mutate_all/`%>%` are on the search path
+  # when the generated function executes
+  library(purrr)
+  library(dplyr)
+  library(magrittr)
+
   e <- new.env(parent = globalenv())
 
   fn <- from_example_to_function(
