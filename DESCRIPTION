@@ -3,23 +3,23 @@ Title: Composable Execution Layers for Iterative R Procedures
 Version: 0.0.0.9000
 Authors@R:
     person("Daniel", "Rakotomalala", , "rakdanielh@gmail.com", role = c("aut", "cre"))
-Description: A framework that turns one-off iterative R procedures (such as
-    'for' loops, 'lapply()' or 'purrr::pmap()') into production-grade
+Description: A framework that turns one-off iterative R procedures (such
+    as 'for' loops, 'lapply()' or 'purrr::pmap()') into production-grade
     workflows by wrapping them with orthogonal, composable execution
     layers. Two layers are always active: structured logging with real
     traceback and per-case timing; and reproducibility capture, which
-    records the R version, loaded package versions, execution
-    environment, the exact iteration mask, and hashes of file inputs so
-    that silent non-reproducibility can be flagged across runs. Further
-    layers (parallel execution, non-blocking background jobs, monitored
-    progress, error replay) are planned and will remain composable with
-    the default layers.
+    records the R version, loaded package versions, execution environment,
+    the exact iteration mask, and hashes of file inputs so that silent
+    non-reproducibility can be flagged across runs. Further layers
+    (parallel execution, non-blocking background jobs, monitored progress,
+    error replay) are planned and will remain composable with the default
+    layers.
 License: MIT + file LICENSE
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 URL: https://github.com/danielrak/genproc
 BugReports: https://github.com/danielrak/genproc/issues
 Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
