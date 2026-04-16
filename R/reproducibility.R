@@ -45,7 +45,7 @@ capture_reproducibility <- function(mask) {
   # Loaded packages (attached + loaded via namespace)
   # sessionInfo()$otherPkgs gives attached non-base packages
   # sessionInfo()$loadedOnly gives loaded-but-not-attached
-  sess <- sessionInfo()
+  sess <- utils::sessionInfo()
 
   attached_pkgs <- sess$otherPkgs
   loaded_pkgs <- sess$loadedOnly
