@@ -71,6 +71,10 @@ add_trycatch_logrow <- function(f) {
   arg_names <- names(formals(f))
   old_body <- body(f)
 
+  # Capture a direct reference to clean_traceback so it works
+  # regardless of f's environment (which may not see the namespace).
+  .__clean_tb_fn__ <- clean_traceback
+
   # Build the new body using bquote for hygiene.
   # Variables prefixed with .__ are internal and unlikely to collide
   # with user code.
@@ -96,11 +100,10 @@ add_trycatch_logrow <- function(f) {
           # We are still inside the original call stack here.
           # Capture the traceback before tryCatch unwinds it.
           .__calls__ <- sys.calls()
-          # Format as a character vector, then collapse
-          .__tb__ <- paste(
-            format(.__calls__[-length(.__calls__)]),
-            collapse = "\n"
-          )
+          # Drop the error handler frame itself
+          .__calls__ <- .__calls__[-length(.__calls__)]
+          # Clean: filter out genproc internals, truncate long lines
+          .__tb__ <- (.(.__clean_tb_fn__))(.__calls__)
           # Store into parent scope (the function body's environment)
           .__captured_error_msg__ <<- conditionMessage(.__e__)
           .__captured_traceback__ <<- .__tb__

@@ -146,3 +146,42 @@ test_that("string arguments are stored correctly in log", {
   expect_equal(result$path, "/nonexistent/file.txt")
   expect_false(result$success)
 })
+
+
+# === Traceback cleaning =======================================================
+
+test_that("traceback does not contain tryCatch/withCallingHandlers internals", {
+  fn <- add_trycatch_logrow(function(x) {
+    my_func <- function() stop("boom")
+    my_func()
+  })
+  result <- fn(1)
+
+  tb <- result$traceback
+  expect_false(grepl("tryCatchList", tb))
+  expect_false(grepl("tryCatchOne", tb))
+  expect_false(grepl("doTryCatch", tb))
+  expect_false(grepl("withCallingHandlers", tb))
+})
+
+test_that("traceback does not contain genproc injected code (.__)", {
+  fn <- add_trycatch_logrow(function(x) stop("fail"))
+  result <- fn(1)
+
+  tb <- result$traceback
+  # Should not contain double-underscore internal variable references
+  expect_false(grepl("\\.__", tb))
+})
+
+test_that("traceback retains user function calls", {
+  fn <- add_trycatch_logrow(function(x) {
+    step_one <- function(v) step_two(v)
+    step_two <- function(v) stop("deep")
+    step_one(x)
+  })
+  result <- fn(1)
+
+  tb <- result$traceback
+  expect_true(grepl("step_one", tb))
+  expect_true(grepl("step_two", tb))
+})
