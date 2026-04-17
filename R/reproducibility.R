@@ -32,6 +32,10 @@
 #'   packages) are recorded in the snapshot so that a parallel run
 #'   can be compared to a sequential one and any parameter drift is
 #'   auditable.
+#' @param nonblocking `NULL` or a `genproc_nonblocking_spec` object.
+#'   When supplied, its fields (strategy, packages) are recorded in
+#'   the snapshot alongside `parallel`, so that a non-blocking run
+#'   remains auditable even though the result materializes later.
 #' @return A list with components:
 #'   \describe{
 #'     \item{timestamp}{POSIXct, start time of the run.}
@@ -44,10 +48,13 @@
 #'     \item{mask_snapshot}{The exact mask data.frame used.}
 #'     \item{parallel}{`NULL` for a sequential run, or a list with the
 #'       parallel spec's fields for a parallel run.}
+#'     \item{nonblocking}{`NULL` for a synchronous run, or a list with
+#'       the non-blocking spec's fields for a non-blocking run.}
 #'   }
 #'
 #' @noRd
-capture_reproducibility <- function(mask, parallel = NULL) {
+capture_reproducibility <- function(mask, parallel = NULL,
+                                    nonblocking = NULL) {
   # System information
   si <- Sys.info()
 
@@ -89,6 +96,15 @@ capture_reproducibility <- function(mask, parallel = NULL) {
     )
   }
 
+  nonblocking_snapshot <- if (is.null(nonblocking)) {
+    NULL
+  } else {
+    list(
+      strategy = nonblocking$strategy,
+      packages = nonblocking$packages
+    )
+  }
+
   list(
     timestamp     = Sys.time(),
     r_version     = R.version.string,
@@ -98,6 +114,7 @@ capture_reproducibility <- function(mask, parallel = NULL) {
     timezone      = Sys.timezone(),
     packages      = all_versions,
     mask_snapshot = mask,
-    parallel      = parallel_snapshot
+    parallel      = parallel_snapshot,
+    nonblocking   = nonblocking_snapshot
   )
 }

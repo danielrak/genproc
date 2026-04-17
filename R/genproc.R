@@ -27,6 +27,14 @@
 #'   `genproc_parallel_spec` object produced by [parallel_spec()].
 #'   When supplied, cases are dispatched to workers via
 #'   [future.apply::future_lapply()].
+#' @param nonblocking `NULL` (default, synchronous call) or a
+#'   `genproc_nonblocking_spec` object produced by
+#'   [nonblocking_spec()]. When supplied, `genproc()` returns
+#'   immediately with a `genproc_result` of status `"running"`, and
+#'   the run continues in a background future. Use [status()] to
+#'   poll the state and [await()] to block until resolution. Can be
+#'   combined with `parallel` — the non-blocking wrapper envelops
+#'   the parallel dispatch.
 #'
 #' @return An object of class `genproc_result` (a named list) with
 #'   components:
@@ -125,8 +133,33 @@
 #'   )
 #' }
 #'
+#' # Non-blocking: return immediately, keep the console, collect later
+#' \dontrun{
+#'   job <- genproc(
+#'     f = slow_fn,
+#'     mask = big_mask,
+#'     nonblocking = nonblocking_spec()
+#'   )
+#'   status(job)              # "running" or "done"
+#'   job <- await(job)        # blocks until resolution
+#'   job$log
+#' }
+#'
+#' # Parallel + non-blocking composed
+#' \dontrun{
+#'   job <- genproc(
+#'     f = slow_fn,
+#'     mask = big_mask,
+#'     parallel    = parallel_spec(workers = 6),
+#'     nonblocking = nonblocking_spec()
+#'   )
+#'   # do other work here
+#'   job <- await(job)
+#' }
+#'
 #' @export
-genproc <- function(f, mask, f_mapping = NULL, parallel = NULL) {
+genproc <- function(f, mask, f_mapping = NULL, parallel = NULL,
+                    nonblocking = NULL) {
   # --- Input validation ---
   if (!is.function(f)) {
     stop("`f` must be a function.", call. = FALSE)
@@ -141,6 +174,14 @@ genproc <- function(f, mask, f_mapping = NULL, parallel = NULL) {
     stop(
       "`parallel` must be NULL or a `genproc_parallel_spec` object ",
       "produced by parallel_spec().",
+      call. = FALSE
+    )
+  }
+  if (!is.null(nonblocking) &&
+      !inherits(nonblocking, "genproc_nonblocking_spec")) {
+    stop(
+      "`nonblocking` must be NULL or a `genproc_nonblocking_spec` ",
+      "object produced by nonblocking_spec().",
       call. = FALSE
     )
   }
@@ -183,50 +224,125 @@ genproc <- function(f, mask, f_mapping = NULL, parallel = NULL) {
   case_ids <- generate_case_ids(mask)
 
   # --- Capture reproducibility (mandatory layer) ---
-  repro <- capture_reproducibility(mask, parallel = parallel)
+  repro <- capture_reproducibility(mask,
+                                   parallel    = parallel,
+                                   nonblocking = nonblocking)
 
   # --- Build per-case argument lists ---
   args_list <- lapply(seq_len(nrow(mask)), function(i) {
     as.list(mask[i, params_from_mask, drop = FALSE])
   })
 
-  # --- Execute ---
-  run_start <- proc.time()[["elapsed"]]
-  log_rows <- execute_cases(f_logged, args_list, parallel)
-  run_end <- proc.time()[["elapsed"]]
+  # --- Sync path ---------------------------------------------------------
+  if (is.null(nonblocking)) {
+    run_start <- proc.time()[["elapsed"]]
+    log_rows  <- execute_cases(f_logged, args_list, parallel)
+    run_end   <- proc.time()[["elapsed"]]
 
-  # --- Attach case_id to each row (order is preserved by execute_cases) ---
+    payload <- assemble_result_payload(log_rows, case_ids,
+                                       run_end - run_start)
+
+    return(structure(
+      list(
+        log                 = payload$log,
+        reproducibility     = repro,
+        n_success           = payload$n_success,
+        n_error             = payload$n_error,
+        duration_total_secs = payload$duration_total_secs,
+        status              = "done"
+      ),
+      class = "genproc_result"
+    ))
+  }
+
+  # --- Non-blocking path -------------------------------------------------
+  # Temporarily install the wrapper plan if a strategy was given; we
+  # restore it on exit. `future::future()` captures the active plan at
+  # creation time, so the restore below does not affect the submitted
+  # future.
+  if (!is.null(nonblocking$strategy)) {
+    oplan <- future::plan(nonblocking$strategy)
+    on.exit(future::plan(oplan), add = TRUE)
+  }
+
+  # Packages the worker must attach. `"sequential"` runs in-process and
+  # needs nothing extra; any real async backend needs `genproc` so that
+  # the two internal helpers resolved below can execute on the worker.
+  is_seq_wrapper <- identical(nonblocking$strategy, "sequential")
+  wrapper_pkgs   <- if (is_seq_wrapper) {
+    nonblocking$packages
+  } else {
+    unique(c("genproc", nonblocking$packages))
+  }
+
+  # Resolve internal helpers through getFromNamespace() rather than
+  # `genproc:::name`. Two reasons:
+  #   - R CMD check flags `pkg:::` calls to the package's own
+  #     namespace with a NOTE; getFromNamespace() is the canonical
+  #     alternative.
+  #   - It also gives us a plain function binding that future's
+  #     globals detection picks up cleanly.
+  execute_cases_fn <- utils::getFromNamespace("execute_cases",
+                                               "genproc")
+  assemble_fn      <- utils::getFromNamespace("assemble_result_payload",
+                                               "genproc")
+
+  fut <- future::future(
+    {
+      run_start <- proc.time()[["elapsed"]]
+      log_rows  <- execute_cases_fn(f_logged, args_list, parallel)
+      run_end   <- proc.time()[["elapsed"]]
+      assemble_fn(log_rows, case_ids, run_end - run_start)
+    },
+    seed     = TRUE,
+    globals  = nonblocking$globals,
+    packages = wrapper_pkgs
+  )
+
+  skeleton <- structure(
+    list(
+      log                 = NULL,
+      reproducibility     = repro,
+      n_success           = NULL,
+      n_error             = NULL,
+      duration_total_secs = NULL,
+      status              = "running"
+    ),
+    class = "genproc_result"
+  )
+  attr(skeleton, "future") <- fut
+  skeleton
+}
+
+
+# Internal. Take a list of one-row log data.frames (as produced by
+# execute_cases), the case_ids vector, and the total wall-clock
+# duration, and produce the named list that becomes / fills a
+# genproc_result: `log` (well-ordered columns), `n_success`,
+# `n_error`, `duration_total_secs`.
+#
+# Used by both the synchronous path and the non-blocking future body,
+# so that the assembled output is bit-identical between the two.
+assemble_result_payload <- function(log_rows, case_ids, total_duration) {
   for (i in seq_along(log_rows)) {
     log_rows[[i]]$case_id <- case_ids[i]
   }
 
-  # --- Assemble log ---
   log <- do.call(rbind, log_rows)
 
-  # Reorder columns: case_id first, then params, then meta
-  meta_cols <- c("case_id", "success", "error_message",
-                 "traceback", "duration_secs")
+  meta_cols  <- c("case_id", "success", "error_message",
+                  "traceback", "duration_secs")
   param_cols <- setdiff(names(log), meta_cols)
   log <- log[, c("case_id", param_cols,
-                  "success", "error_message",
-                  "traceback", "duration_secs"),
+                 "success", "error_message",
+                 "traceback", "duration_secs"),
              drop = FALSE]
 
-  # --- Summary ---
-  n_success <- sum(log$success)
-  n_error <- sum(!log$success)
-
-  # --- Return structured result ---
-  structure(
-    list(
-      log                = log,
-      reproducibility    = repro,
-      n_success          = n_success,
-      n_error            = n_error,
-      duration_total_secs = run_end - run_start,
-      status             = "done"
-    ),
-    class = "genproc_result"
+  list(
+    log                 = log,
+    n_success           = sum(log$success),
+    n_error             = sum(!log$success),
+    duration_total_secs = total_duration
   )
 }
 

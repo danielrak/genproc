@@ -4,7 +4,7 @@
 \alias{genproc}
 \title{Run a function over a mask with mandatory logging and reproducibility}
 \usage{
-genproc(f, mask, f_mapping = NULL, parallel = NULL)
+genproc(f, mask, f_mapping = NULL, parallel = NULL, nonblocking = NULL)
 }
 \arguments{
 \item{f}{A function to apply to each row of the mask. Each formal
@@ -25,6 +25,15 @@ Names are current parameter names, values are new names matching
 \code{genproc_parallel_spec} object produced by \code{\link[=parallel_spec]{parallel_spec()}}.
 When supplied, cases are dispatched to workers via
 \code{\link[future.apply:future_lapply]{future.apply::future_lapply()}}.}
+
+\item{nonblocking}{\code{NULL} (default, synchronous call) or a
+\code{genproc_nonblocking_spec} object produced by
+\code{\link[=nonblocking_spec]{nonblocking_spec()}}. When supplied, \code{genproc()} returns
+immediately with a \code{genproc_result} of status \code{"running"}, and
+the run continues in a background future. Use \code{\link[=status]{status()}} to
+poll the state and \code{\link[=await]{await()}} to block until resolution. Can be
+combined with \code{parallel} — the non-blocking wrapper envelops
+the parallel dispatch.}
 }
 \value{
 An object of class \code{genproc_result} (a named list) with
@@ -140,6 +149,30 @@ result$log
     mask = my_mask,
     parallel = parallel_spec(strategy = "multisession", workers = 4)
   )
+}
+
+# Non-blocking: return immediately, keep the console, collect later
+\dontrun{
+  job <- genproc(
+    f = slow_fn,
+    mask = big_mask,
+    nonblocking = nonblocking_spec()
+  )
+  status(job)              # "running" or "done"
+  job <- await(job)        # blocks until resolution
+  job$log
+}
+
+# Parallel + non-blocking composed
+\dontrun{
+  job <- genproc(
+    f = slow_fn,
+    mask = big_mask,
+    parallel    = parallel_spec(workers = 6),
+    nonblocking = nonblocking_spec()
+  )
+  # do other work here
+  job <- await(job)
 }
 
 }
