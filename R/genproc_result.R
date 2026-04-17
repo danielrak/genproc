@@ -9,7 +9,9 @@
 #' Print a genproc result
 #'
 #' Displays a concise summary of the run: number of cases, success
-#' rate, total duration, and status.
+#' rate, total duration, and status. Handles non-blocking skeletons
+#' (status `"running"`) where counts and duration are not yet
+#' available.
 #'
 #' @param x A `genproc_result` object.
 #' @param ... Ignored (present for S3 method consistency).
@@ -17,13 +19,28 @@
 #'
 #' @export
 print.genproc_result <- function(x, ...) {
-  n_total <- x$n_success + x$n_error
-
   cat("genproc result\n")
   cat("  Status :", x$status, "\n")
-  cat("  Cases  :", n_total,
-      "(", x$n_success, "ok,", x$n_error, "error )\n")
-  cat("  Duration:", round(x$duration_total_secs, 2), "secs\n")
+
+  materialized <- !is.null(x$n_success) && !is.null(x$n_error)
+
+  if (materialized) {
+    n_total <- x$n_success + x$n_error
+    cat("  Cases  :", n_total,
+        "(", x$n_success, "ok,", x$n_error, "error )\n")
+  } else {
+    cat("  Cases  : (pending)\n")
+  }
+
+  if (is.numeric(x$duration_total_secs)) {
+    cat("  Duration:", round(x$duration_total_secs, 2), "secs\n")
+  } else {
+    cat("  Duration: (pending)\n")
+  }
+
+  if (identical(x$status, "error") && !is.null(x$error_message)) {
+    cat("  Error  :", x$error_message, "\n")
+  }
 
   invisible(x)
 }

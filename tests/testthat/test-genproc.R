@@ -283,3 +283,40 @@ test_that("print.genproc_result outputs summary and returns invisibly", {
   expect_true(any(grepl("done", out)))
   expect_true(any(grepl("3", out)))
 })
+
+test_that("print.genproc_result handles a running skeleton (NULL fields)", {
+  skeleton <- structure(
+    list(
+      log                 = NULL,
+      reproducibility     = list(),
+      n_success           = NULL,
+      n_error             = NULL,
+      duration_total_secs = NULL,
+      status              = "running"
+    ),
+    class = "genproc_result"
+  )
+
+  expect_silent(out <- capture.output(print(skeleton)))
+  expect_true(any(grepl("running", out)))
+  expect_true(any(grepl("pending", out)))
+})
+
+test_that("print.genproc_result surfaces wrapper error message", {
+  errored <- structure(
+    list(
+      log                 = NULL,
+      reproducibility     = list(),
+      n_success           = NULL,
+      n_error             = NULL,
+      duration_total_secs = NULL,
+      status              = "error",
+      error_message       = "wrapper future crashed"
+    ),
+    class = "genproc_result"
+  )
+
+  expect_silent(out <- capture.output(print(errored)))
+  expect_true(any(grepl("error", out)))
+  expect_true(any(grepl("wrapper future crashed", out)))
+})
