@@ -1,48 +1,4 @@
 url: https://danielrak.github.io/genproc/
-
 template:
   bootstrap: 5
 
-navbar:
-  structure:
-    left:  [intro, reference, articles, news]
-    right: [github]
-
-reference:
-- title: Run a procedure
-  desc: >
-    The main entry point and its result object.
-  contents:
-  - genproc
-
-- title: Optional execution layers
-  desc: >
-    Compose parallel and non-blocking execution on top of the
-    two mandatory layers (logged, reproducibility).
-  contents:
-  - parallel_spec
-  - nonblocking_spec
-  - status
-  - await
-
-- title: Mask construction
-  desc: >
-    Build iteration masks from existing functions or example
-    expressions.
-  contents:
-  - from_example_to_function
-  - from_function_to_mask
-  - rename_function_params
-
-- title: Building blocks
-  desc: >
-    Lower-level helpers used by `genproc()` and exposed for
-    composability.
-  contents:
-  - add_trycatch_logrow
-
-articles:
-- title: All vignettes
-  navbar: ~
-  contents:
-  - genproc
