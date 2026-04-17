@@ -1,0 +1,59 @@
+# Changelog
+
+## genproc 0.0.0.9000 (development)
+
+### Execution layers
+
+- New
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+  runs a function over an iteration mask, with two mandatory layers
+  always active:
+  - **Logged** — structured log with real traceback (captured via
+    [`withCallingHandlers()`](https://rdrr.io/r/base/conditions.html))
+    and per-case timing.
+  - **Reproducibility** — environment snapshot at run start (R version,
+    platform, loaded package versions, mask, and specs of any optional
+    layer used).
+- New
+  [`parallel_spec()`](https://danielrak.github.io/genproc/reference/parallel_spec.md)
+  and the `parallel` argument of
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md):
+  optional parallel dispatch over
+  [`future.apply::future_lapply()`](https://future.apply.futureverse.org/reference/future_lapply.html).
+  Auto-defaults to `"multisession"` when `workers` is passed without an
+  explicit `strategy`, restoring the previous plan on exit.
+- New
+  [`nonblocking_spec()`](https://danielrak.github.io/genproc/reference/nonblocking_spec.md)
+  and the `nonblocking` argument of
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md):
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+  returns immediately with a `genproc_result` of status `"running"`
+  while the run continues in a background future. Use
+  [`status()`](https://danielrak.github.io/genproc/reference/status.md)
+  to poll,
+  [`await()`](https://danielrak.github.io/genproc/reference/await.md) to
+  block until resolution. Composable with `parallel`.
+
+### Result object
+
+- New S3 class `genproc_result` with stable fields: `log`,
+  `reproducibility`, `n_success`, `n_error`, `duration_total_secs`,
+  `status`.
+- Per-case errors do not stop the run; they are captured in the `log`
+  and surfaced in `n_error`.
+- `case_id`s are index-based (`case_0001`, …) for now; a content-based
+  variant is planned.
+
+### Building blocks
+
+- [`from_example_to_function()`](https://danielrak.github.io/genproc/reference/from_example_to_function.md):
+  transform an example expression into a parameterized function (modular
+  AST rewrite engine, no rlang dependency).
+- [`from_function_to_mask()`](https://danielrak.github.io/genproc/reference/from_function_to_mask.md):
+  derive a one-row template mask (`data.frame`) from a function’s
+  signature.
+- [`rename_function_params()`](https://danielrak.github.io/genproc/reference/rename_function_params.md):
+  rename parameters in formals and body.
+- [`add_trycatch_logrow()`](https://danielrak.github.io/genproc/reference/add_trycatch_logrow.md):
+  the low-level logging wrapper used by
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md).
