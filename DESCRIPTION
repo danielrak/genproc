@@ -9,11 +9,11 @@ Description: A framework that turns one-off iterative R procedures (such
     layers. Two layers are always active: structured logging with real
     traceback and per-case timing; and reproducibility capture, which
     records the R version, loaded package versions, execution environment,
-    the exact iteration mask, and hashes of file inputs so that silent
-    non-reproducibility can be flagged across runs. Further layers
-    (parallel execution, non-blocking background jobs, monitored progress,
-    error replay) are planned and will remain composable with the default
-    layers.
+    and the exact iteration mask. Parallel execution (via the 'future'
+    ecosystem) and non-blocking background jobs are implemented as
+    optional, composable layers. Further layers (monitored progress, error
+    replay, input file hashing) are planned and will remain composable
+    with the default layers.
 License: MIT + file LICENSE
 URL: https://github.com/danielrak/genproc
 BugReports: https://github.com/danielrak/genproc/issues
@@ -23,9 +23,13 @@ Imports:
     utils
 Suggests:
     dplyr,
+    knitr,
     magrittr,
     purrr,
+    rmarkdown,
     testthat (>= 3.0.0)
+VignetteBuilder: 
+    knitr
 Config/testthat/edition: 3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

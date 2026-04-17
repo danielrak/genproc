@@ -18,58 +18,174 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-`genproc` provides robust, logged and reproducible iteration at
-organizational scale. It turns one-off iterative R procedures (`for`,
-`lapply()`, `purrr::pmap()`, ...) into production-grade workflows by
-wrapping them with orthogonal, composable execution layers. The goal is
-to make the transition from *"a script that works on one case"* to *"a
-system that runs reliably on many cases"* an architectural step, not an
-improvised rewrite.
+`genproc` turns one-off iterative R procedures (`for`, `lapply()`,
+`purrr::pmap()`, ...) into production-grade workflows by wrapping
+them with orthogonal, composable execution layers. The goal is to
+make the transition from *"a script that works on one case"* to
+*"a system that runs reliably on many cases"* an architectural
+step, not an improvised rewrite.
 
-Two layers are always active:
+Two layers are always active and cannot be disabled:
 
-- **Logged** — each case produces a structured log row with the real
-  traceback (captured via `withCallingHandlers()`) and timing.
-- **Reproducibility** — each run records the R version, loaded package
-  versions, execution environment, the exact mask, and hashes of the
-  file inputs referenced by the mask. Silent non-reproducibility
-  between runs (e.g. an input file changed without its path changing)
-  is flagged to the user.
+- **Logged** — each case produces a structured log row with the
+  real traceback (captured via `withCallingHandlers()`) and per-case
+  timing.
+- **Reproducibility** — each run records the R version, loaded
+  package versions, execution environment, the exact iteration
+  mask, and the spec of any optional layer used, so that two runs
+  can be compared and any parameter drift is auditable.
 
-Further layers are planned and will be composable with the defaults:
+Two optional layers can be composed with the defaults, at the
+caller's choice:
 
-- parallel execution
-- non-blocking (background) execution
-- monitored progress
-- error replay
+- **Parallel** execution via the `future` ecosystem
+  (`future.apply::future_lapply()`).
+- **Non-blocking** execution: `genproc()` returns immediately with
+  a `genproc_result` of status `"running"` while the run continues
+  in a background future. Poll with `status()`, block with
+  `await()`.
 
 `genproc` has **zero Shiny dependency**. A companion package
 (`genprocShiny`) will later build a UI on top of these functions.
 
-## Status
-
-Early development. The public API is not stable yet. The package is
-not on CRAN.
-
 ## Installation
 
-Install the development version from GitHub:
-
-``` r
+```r
 # install.packages("remotes")
 remotes::install_github("danielrak/genproc")
 ```
 
-## Roadmap (v0.1)
+## A minimal example
 
-- `from_example_to_function()`: turn an example expression into a
-  parameterized function (AST walker, rewritten modularly so a single
-  human can maintain it without AI assistance).
-- `from_function_to_mask()`: derive an iteration mask from a function
-  signature.
-- `genproc()`: run a function over a mask with the mandatory *logged*
-  and *reproducibility* layers.
-- Stable `case_id` injection, structured log, reproducibility report.
+A toy file-conversion task: read a few CSVs from one directory,
+save them as RDS into another. One case per file.
+
+```{r example-setup}
+library(genproc)
+
+# Synthetic workspace
+src_dir <- file.path(tempdir(), "src")
+dst_dir <- file.path(tempdir(), "dst")
+dir.create(src_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(dst_dir, showWarnings = FALSE, recursive = TRUE)
+
+write.csv(head(iris),       file.path(src_dir, "a.csv"), row.names = FALSE)
+write.csv(head(mtcars),     file.path(src_dir, "b.csv"), row.names = FALSE)
+write.csv(head(airquality), file.path(src_dir, "c.csv"), row.names = FALSE)
+
+# Per-case function
+convert <- function(src_dir, src_file, dst_dir, dst_file) {
+  df <- read.csv(file.path(src_dir, src_file))
+  saveRDS(df, file.path(dst_dir, dst_file))
+}
+
+# Iteration mask: one row per conversion
+mask <- data.frame(
+  src_dir  = src_dir,
+  src_file = c("a.csv", "b.csv", "c.csv"),
+  dst_dir  = dst_dir,
+  dst_file = c("a.rds", "b.rds", "c.rds"),
+  stringsAsFactors = FALSE
+)
+
+result <- genproc(convert, mask)
+```
+
+Every run returns a `genproc_result`. The log contains one row per
+case, with stable `case_id`, the parameter values, `success`,
+`error_message`, `traceback`, and `duration_secs`:
+
+```{r example-log}
+result$log[, c("case_id", "src_file", "dst_file",
+               "success", "duration_secs")]
+```
+
+If a case fails, the run continues — the error is captured, not
+thrown. Here we delete one source file on purpose before a second
+run:
+
+```{r example-error}
+file.remove(file.path(src_dir, "b.csv"))
+
+result2 <- genproc(convert, mask)
+result2$log[result2$log$success == FALSE,
+            c("case_id", "src_file", "error_message")]
+result2$n_success
+result2$n_error
+```
+
+The traceback column holds the real R call stack of the failing
+case (filtered for the `tryCatch`/`withCallingHandlers` machinery),
+so debugging a failed case reads like a normal R error.
+
+## The reproducibility snapshot
+
+`result$reproducibility` is a plain list recording the R version,
+OS, timezone, loaded package versions, the exact mask used, and
+the specs of any optional layer. This snapshot lives inside the
+result — no side file to keep in sync:
+
+```{r repro}
+str(result$reproducibility, max.level = 1)
+```
+
+## Parallel execution
+
+Dispatch cases across workers by passing a `parallel_spec()`:
+
+```r
+# Four workers, a temporary multisession plan, restored on exit
+result <- genproc(
+  convert, mask,
+  parallel = parallel_spec(workers = 4)
+)
+```
+
+The two mandatory layers remain active in parallel mode. Case order
+is preserved in the log regardless of the order in which workers
+return. Under the hood, `parallel_spec()` builds a configuration
+object consumed by `future.apply::future_lapply()`.
+
+If you manage `future::plan()` yourself (recommended across several
+calls to amortize worker startup), pass `parallel_spec()` without a
+strategy and your current plan is used unchanged.
+
+## Non-blocking execution
+
+Return immediately, keep the console, collect later:
+
+```r
+job <- genproc(
+  convert, mask,
+  nonblocking = nonblocking_spec()
+)
+
+status(job)        # "running" or "done"
+job <- await(job)  # blocks until resolution
+job$log
+```
+
+`nonblocking_spec()` can be composed with `parallel_spec()` — the
+non-blocking wrapper envelops the parallel dispatch:
+
+```r
+job <- genproc(
+  convert, mask,
+  parallel    = parallel_spec(workers = 4),
+  nonblocking = nonblocking_spec()
+)
+```
+
+## Status
+
+Early development. The public API is not stable yet. The package
+is not on CRAN.
+
+## Learn more
+
+See `vignette("genproc")` for a deep dive: anatomy of the log and
+reproducibility snapshot, per-case error handling, composition
+patterns, and roadmap.
 
 ## License
 
