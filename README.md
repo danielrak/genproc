@@ -5,6 +5,11 @@
 
 <!-- badges: start -->
 
+[![R-CMD-check](https://github.com/danielrak/genproc/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/danielrak/genproc/actions/workflows/R-CMD-check.yaml)
+[![Codecov test
+coverage](https://codecov.io/gh/danielrak/genproc/graph/badge.svg)](https://app.codecov.io/gh/danielrak/genproc)
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
 `genproc` turns one-off iterative R procedures (`for`, `lapply()`,
@@ -86,9 +91,9 @@ with stable `case_id`, the parameter values, `success`, `error_message`,
 result$log[, c("case_id", "src_file", "dst_file",
                "success", "duration_secs")]
 #>     case_id src_file dst_file success duration_secs
-#> 1 case_0001    a.csv    a.rds    TRUE             0
-#> 2 case_0002    b.csv    b.rds    TRUE             0
-#> 3 case_0003    c.csv    c.rds    TRUE             0
+#> 1 case_0001    a.csv    a.rds    TRUE          0.00
+#> 2 case_0002    b.csv    b.rds    TRUE          0.00
+#> 3 case_0003    c.csv    c.rds    TRUE          0.01
 ```
 
 If a case fails, the run continues — the error is captured, not thrown.
@@ -100,7 +105,7 @@ file.remove(file.path(src_dir, "b.csv"))
 
 result2 <- genproc(convert, mask)
 #> Warning in file(file, "rt"): impossible d'ouvrir le fichier
-#> 'C:\Users\rheri\AppData\Local\Temp\Rtmpw3Hxhv/src/b.csv' : No such file or
+#> 'C:\Users\rheri\AppData\Local\Temp\Rtmp69udKt/src/b.csv' : No such file or
 #> directory
 result2$log[result2$log$success == FALSE,
             c("case_id", "src_file", "error_message")]
@@ -125,8 +130,8 @@ to keep in sync:
 
 ``` r
 str(result$reproducibility, max.level = 1)
-#> List of 9
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-17 19:09:15"
+#> List of 10
+#>  $ timestamp    : POSIXct[1:1], format: "2026-04-19 22:22:03"
 #>  $ r_version    : chr "R version 4.5.3 (2026-03-11 ucrt)"
 #>  $ platform     : chr "x86_64-w64-mingw32"
 #>  $ os           : chr "Windows 10 x64"
@@ -136,6 +141,7 @@ str(result$reproducibility, max.level = 1)
 #>   ..- attr(*, "names")= chr [1:23] "genproc" "compiler" "fastmap" "cli" ...
 #>  $ mask_snapshot:'data.frame':   3 obs. of  4 variables:
 #>  $ parallel     : NULL
+#>  $ nonblocking  : NULL
 ```
 
 ## Parallel execution
