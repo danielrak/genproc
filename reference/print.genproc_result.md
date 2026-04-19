@@ -1,7 +1,8 @@
 # Print a genproc result
 
 Displays a concise summary of the run: number of cases, success rate,
-total duration, and status.
+total duration, and status. Handles non-blocking skeletons (status
+`"running"`) where counts and duration are not yet available.
 
 ## Usage
 

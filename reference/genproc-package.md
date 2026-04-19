@@ -32,6 +32,8 @@ Useful links:
 
 - <https://github.com/danielrak/genproc>
 
+- <https://danielrak.github.io/genproc/>
+
 - Report bugs at <https://github.com/danielrak/genproc/issues>
 
 ## Author

@@ -66,12 +66,12 @@ The returned data.frame always has one row. Columns:
 safe_sqrt <- add_trycatch_logrow(function(x) sqrt(x))
 safe_sqrt(4)    # success = TRUE, duration_secs > 0
 #>   x success error_message traceback duration_secs
-#> 1 4    TRUE          <NA>      <NA>         0.001
+#> 1 4    TRUE          <NA>      <NA>             0
 safe_sqrt("a")  # success = FALSE, error_message filled, traceback filled
 #>   x success                                 error_message
 #> 1 a   FALSE non-numeric argument to mathematical function
 #>                                                                                                                                                                                                                                                                                                                                                                                                                                                                       traceback
 #> 1 1. build_site(pkg, preview = FALSE, install = install, new_process = new_process, ...)\n2. build_site_local(pkg = pkg, examples = examples, run_dont_run = run_dont_run, seed = seed, lazy = lazy, override = o ...\n3. build_reference(pkg, lazy = lazy, examples = examples, run_dont_run = run_dont_run, seed = seed, override = override ...\n4. unwrap_purrr_error(purrr::map(topics, build_reference_topic, pkg = pkg, lazy = lazy, examples_env = examples_env, ru ...
 #>   duration_secs
-#> 1             0
+#> 1         0.001
 ```

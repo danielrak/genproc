@@ -75,17 +75,17 @@ Column order is designed for a human scanning a run:
 ``` r
 result$log
 #>     case_id                              src_dir src_file
-#> 1 case_0001 /tmp/Rtmpvo2zyz/genproc-vignette-src    a.csv
-#> 2 case_0002 /tmp/Rtmpvo2zyz/genproc-vignette-src    b.csv
-#> 3 case_0003 /tmp/Rtmpvo2zyz/genproc-vignette-src    c.csv
+#> 1 case_0001 /tmp/RtmpLEjt37/genproc-vignette-src    a.csv
+#> 2 case_0002 /tmp/RtmpLEjt37/genproc-vignette-src    b.csv
+#> 3 case_0003 /tmp/RtmpLEjt37/genproc-vignette-src    c.csv
 #>                                dst_dir dst_file success error_message traceback
-#> 1 /tmp/Rtmpvo2zyz/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
-#> 2 /tmp/Rtmpvo2zyz/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
-#> 3 /tmp/Rtmpvo2zyz/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
+#> 1 /tmp/RtmpLEjt37/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
+#> 2 /tmp/RtmpLEjt37/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
+#> 3 /tmp/RtmpLEjt37/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
 #>   duration_secs
-#> 1         0.001
+#> 1         0.000
 #> 2         0.001
-#> 3         0.001
+#> 3         0.000
 ```
 
 `case_id` is stable and index-based (`case_0001`, `case_0002`, …) for
@@ -97,7 +97,7 @@ of the mask can be reordered between runs.
 ``` r
 str(result$reproducibility, max.level = 1)
 #> List of 10
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-17 19:47:11"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-04-19 17:06:37"
 #>  $ r_version    : chr "R version 4.5.3 (2026-03-11)"
 #>  $ platform     : chr "x86_64-pc-linux-gnu"
 #>  $ os           : chr "Linux 6.17.0-1010-azure"
@@ -136,7 +136,7 @@ file.remove(file.path(src_dir, "b.csv"))
 #> [1] TRUE
 result_broken <- genproc(convert, mask)
 #> Warning in file(file, "rt"): cannot open file
-#> '/tmp/Rtmpvo2zyz/genproc-vignette-src/b.csv': No such file or directory
+#> '/tmp/RtmpLEjt37/genproc-vignette-src/b.csv': No such file or directory
 
 result_broken$n_success
 #> [1] 2
