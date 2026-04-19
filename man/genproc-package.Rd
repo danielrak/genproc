@@ -31,6 +31,7 @@ from a future companion Shiny package.
 Useful links:
 \itemize{
   \item \url{https://github.com/danielrak/genproc}
+  \item \url{https://danielrak.github.io/genproc/}
   \item Report bugs at \url{https://github.com/danielrak/genproc/issues}
 }
 

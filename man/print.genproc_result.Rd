@@ -16,5 +16,7 @@
 }
 \description{
 Displays a concise summary of the run: number of cases, success
-rate, total duration, and status.
+rate, total duration, and status. Handles non-blocking skeletons
+(status \code{"running"}) where counts and duration are not yet
+available.
 }
