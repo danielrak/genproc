@@ -73,5 +73,5 @@ safe_sqrt("a")  # success = FALSE, error_message filled, traceback filled
 #>                                                                                                                                                                                                                                                                                                                                                                                                                                                                       traceback
 #> 1 1. build_site(pkg, preview = FALSE, install = install, new_process = new_process, ...)\n2. build_site_local(pkg = pkg, examples = examples, run_dont_run = run_dont_run, seed = seed, lazy = lazy, override = o ...\n3. build_reference(pkg, lazy = lazy, examples = examples, run_dont_run = run_dont_run, seed = seed, override = override ...\n4. unwrap_purrr_error(purrr::map(topics, build_reference_topic, pkg = pkg, lazy = lazy, examples_env = examples_env, ru ...
 #>   duration_secs
-#> 1         0.001
+#> 1             0
 ```

@@ -137,13 +137,13 @@ existing ones will never be removed or renamed.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span><span class="op">$</span><span class="va">log</span></span>
 <span><span class="co">#&gt;     case_id                              src_dir src_file</span></span>
-<span><span class="co">#&gt; 1 case_0001 /tmp/RtmpoP6oKk/genproc-vignette-src    a.csv</span></span>
-<span><span class="co">#&gt; 2 case_0002 /tmp/RtmpoP6oKk/genproc-vignette-src    b.csv</span></span>
-<span><span class="co">#&gt; 3 case_0003 /tmp/RtmpoP6oKk/genproc-vignette-src    c.csv</span></span>
+<span><span class="co">#&gt; 1 case_0001 /tmp/Rtmpcwkj3g/genproc-vignette-src    a.csv</span></span>
+<span><span class="co">#&gt; 2 case_0002 /tmp/Rtmpcwkj3g/genproc-vignette-src    b.csv</span></span>
+<span><span class="co">#&gt; 3 case_0003 /tmp/Rtmpcwkj3g/genproc-vignette-src    c.csv</span></span>
 <span><span class="co">#&gt;                                dst_dir dst_file success error_message traceback</span></span>
-<span><span class="co">#&gt; 1 /tmp/RtmpoP6oKk/genproc-vignette-dst    a.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 2 /tmp/RtmpoP6oKk/genproc-vignette-dst    b.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 3 /tmp/RtmpoP6oKk/genproc-vignette-dst    c.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 1 /tmp/Rtmpcwkj3g/genproc-vignette-dst    a.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 2 /tmp/Rtmpcwkj3g/genproc-vignette-dst    b.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 3 /tmp/Rtmpcwkj3g/genproc-vignette-dst    c.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
 <span><span class="co">#&gt;   duration_secs</span></span>
 <span><span class="co">#&gt; 1         0.001</span></span>
 <span><span class="co">#&gt; 2         0.001</span></span>
@@ -159,7 +159,7 @@ mask can be reordered between runs.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">reproducibility</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 10</span></span>
-<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-19 17:23:02"</span></span>
+<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-19 19:25:41"</span></span>
 <span><span class="co">#&gt;  $ r_version    : chr "R version 4.5.3 (2026-03-11)"</span></span>
 <span><span class="co">#&gt;  $ platform     : chr "x86_64-pc-linux-gnu"</span></span>
 <span><span class="co">#&gt;  $ os           : chr "Linux 6.17.0-1010-azure"</span></span>
@@ -206,7 +206,7 @@ delete a source file between two runs:</p>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">result_broken</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in file(file, "rt"): cannot open file</span></span>
-<span><span class="co">#&gt; '/tmp/RtmpoP6oKk/genproc-vignette-src/b.csv': No such file or directory</span></span>
+<span><span class="co">#&gt; '/tmp/Rtmpcwkj3g/genproc-vignette-src/b.csv': No such file or directory</span></span>
 <span></span>
 <span><span class="va">result_broken</span><span class="op">$</span><span class="va">n_success</span></span>
 <span><span class="co">#&gt; [1] 2</span></span>

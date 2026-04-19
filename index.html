@@ -51,7 +51,7 @@
 <div class="page-header"><h1 id="genproc">genproc<a class="anchor" aria-label="anchor" href="#genproc"></a>
 </h1></div>
 <!-- badges: start -->
-<!-- badges: end -->
+
 <p><code>genproc</code> turns one-off iterative R procedures (<code>for</code>, <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code>, <code><a href="https://purrr.tidyverse.org/reference/pmap.html" class="external-link">purrr::pmap()</a></code>, …) into production-grade workflows by wrapping them with orthogonal, composable execution layers. The goal is to make the transition from <em>“a script that works on one case”</em> to <em>“a system that runs reliably on many cases”</em> an architectural step, not an improvised rewrite.</p>
 <p>Two layers are always active and cannot be disabled:</p>
 <ul>
@@ -113,9 +113,9 @@
 <code class="sourceCode R"><span><span class="va">result</span><span class="op">$</span><span class="va">log</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"case_id"</span>, <span class="st">"src_file"</span>, <span class="st">"dst_file"</span>,</span>
 <span>               <span class="st">"success"</span>, <span class="st">"duration_secs"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;     case_id src_file dst_file success duration_secs</span></span>
-<span><span class="co">#&gt; 1 case_0001    a.csv    a.rds    TRUE             0</span></span>
-<span><span class="co">#&gt; 2 case_0002    b.csv    b.rds    TRUE             0</span></span>
-<span><span class="co">#&gt; 3 case_0003    c.csv    c.rds    TRUE             0</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 case_0001    a.csv    a.rds    TRUE          0.00</span></span>
+<span><span class="co">#&gt; 2 case_0002    b.csv    b.rds    TRUE          0.00</span></span>
+<span><span class="co">#&gt; 3 case_0003    c.csv    c.rds    TRUE          0.01</span></span></code></pre></div>
 <p>If a case fails, the run continues — the error is captured, not thrown. Here we delete one source file on purpose before a second run:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.remove</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">src_dir</span>, <span class="st">"b.csv"</span><span class="op">)</span><span class="op">)</span></span>
@@ -123,7 +123,7 @@
 <span></span>
 <span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in file(file, "rt"): impossible d'ouvrir le fichier</span></span>
-<span><span class="co">#&gt; 'C:\Users\rheri\AppData\Local\Temp\Rtmpw3Hxhv/src/b.csv' : No such file or</span></span>
+<span><span class="co">#&gt; 'C:\Users\rheri\AppData\Local\Temp\Rtmp69udKt/src/b.csv' : No such file or</span></span>
 <span><span class="co">#&gt; directory</span></span>
 <span><span class="va">result2</span><span class="op">$</span><span class="va">log</span><span class="op">[</span><span class="va">result2</span><span class="op">$</span><span class="va">log</span><span class="op">$</span><span class="va">success</span> <span class="op">==</span> <span class="cn">FALSE</span>,</span>
 <span>            <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"case_id"</span>, <span class="st">"src_file"</span>, <span class="st">"error_message"</span><span class="op">)</span><span class="op">]</span></span>
@@ -141,8 +141,8 @@
 <p><code>result$reproducibility</code> is a plain list recording the R version, OS, timezone, loaded package versions, the exact mask used, and the specs of any optional layer. This snapshot lives inside the result — no side file to keep in sync:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">reproducibility</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; List of 9</span></span>
-<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-17 19:09:15"</span></span>
+<span><span class="co">#&gt; List of 10</span></span>
+<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-19 22:22:03"</span></span>
 <span><span class="co">#&gt;  $ r_version    : chr "R version 4.5.3 (2026-03-11 ucrt)"</span></span>
 <span><span class="co">#&gt;  $ platform     : chr "x86_64-w64-mingw32"</span></span>
 <span><span class="co">#&gt;  $ os           : chr "Windows 10 x64"</span></span>
@@ -151,7 +151,8 @@
 <span><span class="co">#&gt;  $ packages     : Named chr [1:23] "0.0.0.9000" "4.5.3" "1.2.0" "3.6.6" ...</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "names")= chr [1:23] "genproc" "compiler" "fastmap" "cli" ...</span></span>
 <span><span class="co">#&gt;  $ mask_snapshot:'data.frame':   3 obs. of  4 variables:</span></span>
-<span><span class="co">#&gt;  $ parallel     : NULL</span></span></code></pre></div>
+<span><span class="co">#&gt;  $ parallel     : NULL</span></span>
+<span><span class="co">#&gt;  $ nonblocking  : NULL</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="parallel-execution">Parallel execution<a class="anchor" aria-label="anchor" href="#parallel-execution"></a>
@@ -234,7 +235,14 @@
 </ul>
 </div>
 
-
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
+<ul class="list-unstyled">
+<li><a href="https://github.com/danielrak/genproc/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/danielrak/genproc/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://app.codecov.io/gh/danielrak/genproc" class="external-link"><img src="https://codecov.io/gh/danielrak/genproc/graph/badge.svg" alt="Codecov test coverage"></a></li>
+<li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
+</ul>
+</div>
 
   </aside>
 </div>
