@@ -137,17 +137,17 @@ existing ones will never be removed or renamed.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span><span class="op">$</span><span class="va">log</span></span>
 <span><span class="co">#&gt;     case_id                              src_dir src_file</span></span>
-<span><span class="co">#&gt; 1 case_0001 /tmp/RtmpvBzKKS/genproc-vignette-src    a.csv</span></span>
-<span><span class="co">#&gt; 2 case_0002 /tmp/RtmpvBzKKS/genproc-vignette-src    b.csv</span></span>
-<span><span class="co">#&gt; 3 case_0003 /tmp/RtmpvBzKKS/genproc-vignette-src    c.csv</span></span>
+<span><span class="co">#&gt; 1 case_0001 /tmp/RtmpoP6oKk/genproc-vignette-src    a.csv</span></span>
+<span><span class="co">#&gt; 2 case_0002 /tmp/RtmpoP6oKk/genproc-vignette-src    b.csv</span></span>
+<span><span class="co">#&gt; 3 case_0003 /tmp/RtmpoP6oKk/genproc-vignette-src    c.csv</span></span>
 <span><span class="co">#&gt;                                dst_dir dst_file success error_message traceback</span></span>
-<span><span class="co">#&gt; 1 /tmp/RtmpvBzKKS/genproc-vignette-dst    a.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 2 /tmp/RtmpvBzKKS/genproc-vignette-dst    b.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 3 /tmp/RtmpvBzKKS/genproc-vignette-dst    c.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 1 /tmp/RtmpoP6oKk/genproc-vignette-dst    a.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 2 /tmp/RtmpoP6oKk/genproc-vignette-dst    b.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 3 /tmp/RtmpoP6oKk/genproc-vignette-dst    c.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
 <span><span class="co">#&gt;   duration_secs</span></span>
-<span><span class="co">#&gt; 1         0.000</span></span>
+<span><span class="co">#&gt; 1         0.001</span></span>
 <span><span class="co">#&gt; 2         0.001</span></span>
-<span><span class="co">#&gt; 3         0.000</span></span></code></pre></div>
+<span><span class="co">#&gt; 3         0.001</span></span></code></pre></div>
 <p><code>case_id</code> is stable and index-based
 (<code>case_0001</code>, <code>case_0002</code>, …) for now. A
 content-based variant is on the roadmap, for use cases where rows of the
@@ -159,7 +159,7 @@ mask can be reordered between runs.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">reproducibility</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 10</span></span>
-<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-19 17:12:47"</span></span>
+<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-19 17:23:02"</span></span>
 <span><span class="co">#&gt;  $ r_version    : chr "R version 4.5.3 (2026-03-11)"</span></span>
 <span><span class="co">#&gt;  $ platform     : chr "x86_64-pc-linux-gnu"</span></span>
 <span><span class="co">#&gt;  $ os           : chr "Linux 6.17.0-1010-azure"</span></span>
@@ -206,7 +206,7 @@ delete a source file between two runs:</p>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">result_broken</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in file(file, "rt"): cannot open file</span></span>
-<span><span class="co">#&gt; '/tmp/RtmpvBzKKS/genproc-vignette-src/b.csv': No such file or directory</span></span>
+<span><span class="co">#&gt; '/tmp/RtmpoP6oKk/genproc-vignette-src/b.csv': No such file or directory</span></span>
 <span></span>
 <span><span class="va">result_broken</span><span class="op">$</span><span class="va">n_success</span></span>
 <span><span class="co">#&gt; [1] 2</span></span>
@@ -354,6 +354,20 @@ silently block because the current <code><a href="https://future.futureverse.org
 <code>sequential</code> (the default in a fresh R session). Power-users
 who manage their plan can pass <code>strategy = NULL</code> explicitly
 to defer.</p>
+</div>
+<div class="section level3">
+<h3 id="plan-lifetime">Plan lifetime<a class="anchor" aria-label="anchor" href="#plan-lifetime"></a>
+</h3>
+<p>When <code><a href="../reference/nonblocking_spec.html">nonblocking_spec()</a></code> installs a plan, the previous
+plan is <strong>not</strong> restored on <code><a href="../reference/genproc.html">genproc()</a></code> exit —
+it is restored by <code><a href="../reference/await.html">await()</a></code> once the future has been
+collected. Restoring earlier would call <code><a href="https://future.futureverse.org/reference/plan.html" class="external-link">future::plan()</a></code>
+while the wrapper future is still running, which shuts down the
+multisession workers and surfaces a “Future was canceled” error at
+collection time. The trade-off is that if you never call
+<code><a href="../reference/await.html">await()</a></code>, the installed plan stays active for the rest of
+the session. Power-users who pass <code>strategy = NULL</code> and
+manage the plan themselves are not affected.</p>
 </div>
 </div>
 <div class="section level2">
