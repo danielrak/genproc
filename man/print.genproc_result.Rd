@@ -16,7 +16,13 @@
 }
 \description{
 Displays a concise summary of the run: number of cases, success
-rate, total duration, and status. Handles non-blocking skeletons
-(status \code{"running"}) where counts and duration are not yet
-available.
+rate, total duration, and status.
+}
+\details{
+For non-blocking results, the status is queried \emph{live} from the
+attached future (via \code{\link[=status]{status()}}) rather than read from the stored
+field, which is frozen at the moment the skeleton is created. This
+way, repeated \code{print(x)} calls reflect the actual progress of the
+background run. Numeric fields stay \code{(pending)} until \code{\link[=await]{await()}} is
+called to materialize the result.
 }

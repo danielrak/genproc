@@ -181,3 +181,29 @@ test_that("temporary plan set by nonblocking strategy is restored on exit", {
 
   expect_true(inherits(future::plan(), "sequential"))
 })
+
+
+# === Regression: multisession future must not be canceled =====================
+
+test_that("multisession non-blocking run materializes without cancellation", {
+  # Regression: previously `genproc()` called `on.exit(future::plan(oplan))`
+  # in the non-blocking path, which shut down the multisession cluster
+  # and canceled the pending wrapper future. `await()` then surfaced a
+  # "Future was canceled" error. This test exercises the full real
+  # multisession path end-to-end.
+  skip_on_cran()
+  skip_if_not_installed("future")
+  skip_if_not_installed("future.apply")
+
+  old <- future::plan(future::sequential)
+  on.exit(future::plan(old), add = TRUE)
+
+  x <- genproc(function(x) x * 2, data.frame(x = 1:3),
+               nonblocking = nonblocking_spec(strategy = "multisession"))
+  x <- await(x)
+
+  expect_equal(x$status, "done")
+  expect_equal(x$n_success, 3L)
+  expect_equal(x$n_error, 0L)
+  expect_equal(x$log$x, 1:3)
+})

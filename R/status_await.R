@@ -90,6 +90,17 @@ await.genproc_result <- function(x, ...) {
     }
   )
 
+  # Once the future is collected, we can safely restore the previous
+  # plan (if genproc() installed one for this run). We do this here,
+  # not in on.exit of genproc(), because `future::plan()` shuts down
+  # the current cluster on switch — doing it before collection kills
+  # the very worker running the submitted future.
+  oplan <- attr(x, "oplan")
+  if (!is.null(oplan)) {
+    try(future::plan(oplan), silent = TRUE)
+  }
+  attr(x, "oplan") <- NULL
+
   # Wrapper crash: expose via status = "error" + error_message.
   if (inherits(materialized, "genproc_wrapper_error")) {
     x$status        <- "error"

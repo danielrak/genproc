@@ -305,7 +305,9 @@ test_that("print.genproc_result handles a running skeleton (NULL fields)", {
 test_that("print.genproc_result reflects live future status, not stored field", {
   # Regression: previously `print()` read x$status (frozen at skeleton
   # creation time), so a resolved future kept displaying "running"
-  # until `await()` was called. It must query status() live.
+  # until `await()` was called. It must query status() live and
+  # surface a clear "done (not collected)" label when the future has
+  # resolved but the skeleton has not been materialized.
   oplan <- future::plan(future::sequential)
   on.exit(future::plan(oplan), add = TRUE)
 
@@ -327,9 +329,9 @@ test_that("print.genproc_result reflects live future status, not stored field", 
   attr(skeleton, "future") <- fut
 
   out <- capture.output(print(skeleton))
-  expect_true(any(grepl("done", out)))          # live status
-  expect_false(any(grepl("Status : running", out)))
-  expect_true(any(grepl("await", out)))         # hint present
+  expect_true(any(grepl("not collected", out)))           # new label
+  expect_false(any(grepl("Status : running", out)))       # not stale
+  expect_true(any(grepl("<- await\\(", out)))             # explicit hint
 })
 
 test_that("print.genproc_result surfaces wrapper error message", {

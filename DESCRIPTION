@@ -15,7 +15,8 @@ Description: A framework that turns one-off iterative R procedures (such
     replay, input file hashing) are planned and will remain composable
     with the default layers.
 License: MIT + file LICENSE
-URL: https://github.com/danielrak/genproc, https://danielrak.github.io/genproc/
+URL: https://github.com/danielrak/genproc,
+    https://danielrak.github.io/genproc/
 BugReports: https://github.com/danielrak/genproc/issues
 Imports:
     future,

@@ -256,13 +256,17 @@ genproc <- function(f, mask, f_mapping = NULL, parallel = NULL,
   }
 
   # --- Non-blocking path -------------------------------------------------
-  # Temporarily install the wrapper plan if a strategy was given; we
-  # restore it on exit. `future::future()` captures the active plan at
-  # creation time, so the restore below does not affect the submitted
-  # future.
+  # Install the requested plan if a strategy was given, but DO NOT
+  # restore it on exit. `future::plan()` shuts down the previous
+  # cluster's workers when switched, which would kill the multisession
+  # worker running our just-submitted future and surface a
+  # "Future was canceled" error at await() time.
+  #
+  # Instead, we stash the previous plan on the skeleton and let
+  # `await()` restore it once the future has been collected.
+  oplan <- NULL
   if (!is.null(nonblocking$strategy)) {
     oplan <- future::plan(nonblocking$strategy)
-    on.exit(future::plan(oplan), add = TRUE)
   }
 
   # Packages the worker must attach. `"sequential"` runs in-process and
@@ -311,6 +315,9 @@ genproc <- function(f, mask, f_mapping = NULL, parallel = NULL,
     class = "genproc_result"
   )
   attr(skeleton, "future") <- fut
+  # oplan is NULL if no strategy was installed (power-user mode):
+  # await() will see NULL and skip the plan restoration step.
+  attr(skeleton, "oplan")  <- oplan
   skeleton
 }
 

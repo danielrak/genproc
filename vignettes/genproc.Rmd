@@ -256,6 +256,18 @@ named "non-blocking" must not silently block because the current
 session). Power-users who manage their plan can pass
 `strategy = NULL` explicitly to defer.
 
+### Plan lifetime
+
+When `nonblocking_spec()` installs a plan, the previous plan is
+**not** restored on `genproc()` exit — it is restored by `await()`
+once the future has been collected. Restoring earlier would call
+`future::plan()` while the wrapper future is still running, which
+shuts down the multisession workers and surfaces a "Future was
+canceled" error at collection time. The trade-off is that if you
+never call `await()`, the installed plan stays active for the rest
+of the session. Power-users who pass `strategy = NULL` and manage
+the plan themselves are not affected.
+
 ## Composition: parallel × non-blocking
 
 The two optional layers are orthogonal:

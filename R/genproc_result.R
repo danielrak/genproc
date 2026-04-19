@@ -28,8 +28,20 @@ print.genproc_result <- function(x, ...) {
   has_future   <- !is.null(attr(x, "future"))
   materialized <- !is.null(x$n_success) && !is.null(x$n_error)
 
+  # When the future has resolved but the user has not called await(),
+  # the object's numeric fields are still NULL (R is pass-by-value —
+  # the skeleton cannot self-update). We label this "done (not
+  # collected)" so it doesn't read as a contradiction with the
+  # (pending) Cases / Duration lines.
+  status_label <- if (has_future && !materialized &&
+                      identical(live_status, "done")) {
+    "done (not collected)"
+  } else {
+    live_status
+  }
+
   cat("genproc result\n")
-  cat("  Status :", live_status, "\n")
+  cat("  Status :", status_label, "\n")
 
   if (materialized) {
     n_total <- x$n_success + x$n_error
@@ -49,9 +61,13 @@ print.genproc_result <- function(x, ...) {
     cat("  Error  :", x$error_message, "\n")
   }
 
-  # Hint: future has resolved but skeleton has not been materialized.
+  # Explicit, copy-pasteable hint using the user's actual variable
+  # name where possible.
   if (has_future && !materialized && identical(live_status, "done")) {
-    cat("  -> call await(x) to materialize the result.\n")
+    var_name <- tryCatch(deparse(substitute(x)),
+                         error = function(e) "x")
+    if (!nzchar(var_name) || length(var_name) != 1L) var_name <- "x"
+    cat("  -> ", var_name, " <- await(", var_name, ")\n", sep = "")
   }
 
   invisible(x)
