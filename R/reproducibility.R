@@ -12,10 +12,11 @@
 #   - Timestamp of the run
 #   - Snapshot of the exact mask used
 #   - Parallel execution spec (if any)
+#   - Input file fingerprints (size + mtime, see R/track_inputs.R)
 #
 # Not yet captured (planned):
-#   - Hashes of input files referenced in the mask (requires knowing
-#     which columns are file paths)
+#   - Content hashes of input files (currently only stat-based;
+#     hash method reserved as a future extension via inputs$method)
 #   - Seed state for non-parallel runs (parallel runs already expose
 #     the master seed through the parallel spec)
 
@@ -36,6 +37,9 @@
 #'   When supplied, its fields (strategy, packages) are recorded in
 #'   the snapshot alongside `parallel`, so that a non-blocking run
 #'   remains auditable even though the result materializes later.
+#' @param inputs `NULL` or the input-fingerprints snapshot built by
+#'   `capture_input_fingerprints()`. Stored as-is in the
+#'   `inputs` field of the returned list.
 #' @return A list with components:
 #'   \describe{
 #'     \item{timestamp}{POSIXct, start time of the run.}
@@ -50,11 +54,16 @@
 #'       parallel spec's fields for a parallel run.}
 #'     \item{nonblocking}{`NULL` for a synchronous run, or a list with
 #'       the non-blocking spec's fields for a non-blocking run.}
+#'     \item{inputs}{`NULL` when input tracking is disabled, otherwise
+#'       a list `(method, files, refs)` describing the fingerprints
+#'       of input files referenced in the mask. See
+#'       `capture_input_fingerprints()`.}
 #'   }
 #'
 #' @noRd
 capture_reproducibility <- function(mask, parallel = NULL,
-                                    nonblocking = NULL) {
+                                    nonblocking = NULL,
+                                    inputs = NULL) {
   # System information
   si <- Sys.info()
 
@@ -115,6 +124,7 @@ capture_reproducibility <- function(mask, parallel = NULL,
     packages      = all_versions,
     mask_snapshot = mask,
     parallel      = parallel_snapshot,
-    nonblocking   = nonblocking_snapshot
+    nonblocking   = nonblocking_snapshot,
+    inputs        = inputs
   )
 }

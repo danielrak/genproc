@@ -35,6 +35,20 @@
 #'   poll the state and [await()] to block until resolution. Can be
 #'   combined with `parallel` — the non-blocking wrapper envelops
 #'   the parallel dispatch.
+#' @param track_inputs Logical. When `TRUE` (default), genproc detects
+#'   columns of `mask` that reference input files and records their
+#'   size + mtime in `result$reproducibility$inputs`. Use [diff_inputs()]
+#'   to compare two runs and detect silent input drift. Set to `FALSE`
+#'   to skip input tracking entirely.
+#' @param input_cols `NULL` (default) or a character vector of mask
+#'   column names. When supplied, the heuristic detection is bypassed
+#'   and exactly these columns are tracked. Paths that do not exist
+#'   at capture time are recorded with `NA` size/mtime and a warning
+#'   is emitted. Mutually exclusive with `skip_input_cols`.
+#' @param skip_input_cols `NULL` (default) or a character vector of
+#'   mask column names to exclude from heuristic detection. Useful
+#'   when a label column happens to match an existing file. Mutually
+#'   exclusive with `input_cols`.
 #'
 #' @return An object of class `genproc_result` (a named list) with
 #'   components:
@@ -159,7 +173,10 @@
 #'
 #' @export
 genproc <- function(f, mask, f_mapping = NULL, parallel = NULL,
-                    nonblocking = NULL) {
+                    nonblocking = NULL,
+                    track_inputs = TRUE,
+                    input_cols = NULL,
+                    skip_input_cols = NULL) {
   # --- Input validation ---
   if (!is.function(f)) {
     stop("`f` must be a function.", call. = FALSE)
@@ -184,6 +201,10 @@ genproc <- function(f, mask, f_mapping = NULL, parallel = NULL,
       "object produced by nonblocking_spec().",
       call. = FALSE
     )
+  }
+  if (!is.logical(track_inputs) || length(track_inputs) != 1L ||
+      is.na(track_inputs)) {
+    stop("`track_inputs` must be a single TRUE/FALSE.", call. = FALSE)
   }
 
   # --- Optional parameter rename ---
@@ -223,10 +244,19 @@ genproc <- function(f, mask, f_mapping = NULL, parallel = NULL,
   # --- Generate case IDs ---
   case_ids <- generate_case_ids(mask)
 
+  # --- Capture input fingerprints (sub-layer of reproducibility) ---
+  inputs <- capture_input_fingerprints(
+    mask, case_ids,
+    track           = track_inputs,
+    input_cols      = input_cols,
+    skip_input_cols = skip_input_cols
+  )
+
   # --- Capture reproducibility (mandatory layer) ---
   repro <- capture_reproducibility(mask,
                                    parallel    = parallel,
-                                   nonblocking = nonblocking)
+                                   nonblocking = nonblocking,
+                                   inputs      = inputs)
 
   # --- Build per-case argument lists ---
   args_list <- lapply(seq_len(nrow(mask)), function(i) {

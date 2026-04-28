@@ -19,6 +19,15 @@
   `genproc_result` of status `"running"` while the run continues
   in a background future. Use `status()` to poll, `await()` to
   block until resolution. Composable with `parallel`.
+* The reproducibility layer now records a stat-based fingerprint
+  (size + mtime) of every input file referenced in the mask.
+  Stored in `result$reproducibility$inputs` as
+  `(method, files, refs)`. Heuristic detection by default; explicit
+  override via `genproc(..., input_cols = ...)` or
+  `skip_input_cols = ...`. Disable with `track_inputs = FALSE`.
+* New `diff_inputs(r0, r1)` compares the input fingerprints of two
+  runs and reports changed / unchanged / added / removed files,
+  with a human-readable print method.
 
 ## Result object
 
