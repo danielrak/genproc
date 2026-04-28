@@ -127,12 +127,19 @@ test_that("print.genproc_input_diff returns its argument invisibly", {
 })
 
 test_that("print.genproc_input_diff shows changed file detail", {
+  # Mutation must change BOTH size and mtime so the print method shows
+  # both "size:" and "mtime:" lines. We rewrite the file with strictly
+  # more content. NB: a same-length rewrite would only flip mtime on
+  # Linux (tie at the byte level) but flip both on Windows (CRLF
+  # expansion makes the length differ). Either way, picking a clearly
+  # longer payload removes the platform-dependent ambiguity.
   runs <- make_two_runs(mutation = function(paths) {
     Sys.sleep(1.1)
-    writeLines("x\n1\n2\n3\n", paths[1])
+    writeLines("x,y\n1,2\n3,4\n5,6\n7,8\n", paths[1])
   })
   d <- diff_inputs(runs$r0, runs$r1)
   out <- paste(capture.output(print(d)), collapse = "\n")
   expect_match(out, "Changed:")
-  expect_match(out, "size:")  # size or mtime line printed
+  expect_match(out, "size:")
+  expect_match(out, "mtime:")
 })
