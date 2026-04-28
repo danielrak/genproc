@@ -12,6 +12,16 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment  = "#>"
 )
+
+# Force English R messages while rendering, so the published vignette
+# stays consistent regardless of the contributor's locale. Wrapped in
+# tryCatch because some platforms reject "LC_MESSAGES".
+invisible(tryCatch(
+  Sys.setlocale("LC_MESSAGES", "C"),
+  error = function(e) NULL,
+  warning = function(w) NULL
+))
+Sys.setenv(LANGUAGE = "en")
 ```
 
 The `README` introduces the four layers on a minimal example. This
