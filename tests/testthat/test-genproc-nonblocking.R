@@ -194,6 +194,13 @@ test_that("multisession non-blocking run materializes without cancellation", {
   skip_on_cran()
   skip_if_not_installed("future")
   skip_if_not_installed("future.apply")
+  # Multisession workers load packages via library(), which only sees
+  # installed packages. devtools::load_all() does NOT install, so this
+  # test is skipped in dev mode — run it after R CMD INSTALL.
+  skip_if_not(
+    "genproc" %in% rownames(utils::installed.packages()),
+    "genproc not installed — skip (multisession needs installed pkg)"
+  )
 
   old <- future::plan(future::sequential)
   on.exit(future::plan(old), add = TRUE)

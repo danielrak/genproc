@@ -21,6 +21,7 @@ BugReports: https://github.com/danielrak/genproc/issues
 Imports:
     future,
     future.apply,
+    stats,
     utils
 Suggests:
     dplyr,

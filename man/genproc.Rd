@@ -4,7 +4,16 @@
 \alias{genproc}
 \title{Run a function over a mask with mandatory logging and reproducibility}
 \usage{
-genproc(f, mask, f_mapping = NULL, parallel = NULL, nonblocking = NULL)
+genproc(
+  f,
+  mask,
+  f_mapping = NULL,
+  parallel = NULL,
+  nonblocking = NULL,
+  track_inputs = TRUE,
+  input_cols = NULL,
+  skip_input_cols = NULL
+)
 }
 \arguments{
 \item{f}{A function to apply to each row of the mask. Each formal
@@ -34,6 +43,23 @@ the run continues in a background future. Use \code{\link[=status]{status()}} to
 poll the state and \code{\link[=await]{await()}} to block until resolution. Can be
 combined with \code{parallel} — the non-blocking wrapper envelops
 the parallel dispatch.}
+
+\item{track_inputs}{Logical. When \code{TRUE} (default), genproc detects
+columns of \code{mask} that reference input files and records their
+size + mtime in \code{result$reproducibility$inputs}. Use \code{\link[=diff_inputs]{diff_inputs()}}
+to compare two runs and detect silent input drift. Set to \code{FALSE}
+to skip input tracking entirely.}
+
+\item{input_cols}{\code{NULL} (default) or a character vector of mask
+column names. When supplied, the heuristic detection is bypassed
+and exactly these columns are tracked. Paths that do not exist
+at capture time are recorded with \code{NA} size/mtime and a warning
+is emitted. Mutually exclusive with \code{skip_input_cols}.}
+
+\item{skip_input_cols}{\code{NULL} (default) or a character vector of
+mask column names to exclude from heuristic detection. Useful
+when a label column happens to match an existing file. Mutually
+exclusive with \code{input_cols}.}
 }
 \value{
 An object of class \code{genproc_result} (a named list) with
