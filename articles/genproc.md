@@ -75,17 +75,17 @@ Column order is designed for a human scanning a run:
 ``` r
 result$log
 #>     case_id                              src_dir src_file
-#> 1 case_0001 /tmp/Rtmpj7mT7Z/genproc-vignette-src    a.csv
-#> 2 case_0002 /tmp/Rtmpj7mT7Z/genproc-vignette-src    b.csv
-#> 3 case_0003 /tmp/Rtmpj7mT7Z/genproc-vignette-src    c.csv
+#> 1 case_0001 /tmp/Rtmp6KZPqY/genproc-vignette-src    a.csv
+#> 2 case_0002 /tmp/Rtmp6KZPqY/genproc-vignette-src    b.csv
+#> 3 case_0003 /tmp/Rtmp6KZPqY/genproc-vignette-src    c.csv
 #>                                dst_dir dst_file success error_message traceback
-#> 1 /tmp/Rtmpj7mT7Z/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
-#> 2 /tmp/Rtmpj7mT7Z/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
-#> 3 /tmp/Rtmpj7mT7Z/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
+#> 1 /tmp/Rtmp6KZPqY/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
+#> 2 /tmp/Rtmp6KZPqY/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
+#> 3 /tmp/Rtmp6KZPqY/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
 #>   duration_secs
 #> 1         0.001
 #> 2         0.001
-#> 3         0.001
+#> 3         0.000
 ```
 
 `case_id` is stable and index-based (`case_0001`, `case_0002`, …) for
@@ -97,7 +97,7 @@ of the mask can be reordered between runs.
 ``` r
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-28 19:14:39"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-04-28 19:32:54"
 #>  $ r_version    : chr "R version 4.6.0 (2026-04-24)"
 #>  $ platform     : chr "x86_64-pc-linux-gnu"
 #>  $ os           : chr "Linux 6.17.0-1011-azure"
@@ -171,9 +171,9 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                         path size               mtime
-#> 1 /tmp/Rtmpj7mT7Z/genproc-vignette-src/a.csv  214 2026-04-28 19:14:39
-#> 2 /tmp/Rtmpj7mT7Z/genproc-vignette-src/b.csv  296 2026-04-28 19:14:39
-#> 3 /tmp/Rtmpj7mT7Z/genproc-vignette-src/c.csv  154 2026-04-28 19:14:39
+#> 1 /tmp/Rtmp6KZPqY/genproc-vignette-src/a.csv  214 2026-04-28 19:32:54
+#> 2 /tmp/Rtmp6KZPqY/genproc-vignette-src/b.csv  296 2026-04-28 19:32:54
+#> 3 /tmp/Rtmp6KZPqY/genproc-vignette-src/c.csv  154 2026-04-28 19:32:54
 ```
 
 #### Overrides
@@ -207,9 +207,9 @@ diff_inputs(run0, run1)
 #>   Added:     0
 #> 
 #> Changed files:
-#>   /tmp/Rtmpj7mT7Z/genproc-vignette-src/a.csv
+#>   /tmp/Rtmp6KZPqY/genproc-vignette-src/a.csv
 #>       size:  214 B -> 3.9 KB
-#>       mtime: 2026-04-28 19:14:39 -> 2026-04-28 19:14:39
+#>       mtime: 2026-04-28 19:32:54 -> 2026-04-28 19:32:55
 ```
 
 [`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
@@ -233,7 +233,7 @@ file.remove(file.path(src_dir, "b.csv"))
 #> [1] TRUE
 result_broken <- genproc(convert, mask)
 #> Warning in file(file, "rt"): cannot open file
-#> '/tmp/Rtmpj7mT7Z/genproc-vignette-src/b.csv': No such file or directory
+#> '/tmp/Rtmp6KZPqY/genproc-vignette-src/b.csv': No such file or directory
 
 result_broken$n_success
 #> [1] 2
