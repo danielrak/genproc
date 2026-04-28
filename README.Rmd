@@ -11,6 +11,16 @@ knitr::opts_chunk$set(
   fig.path = "man/figures/README-",
   out.width = "100%"
 )
+
+# Force English R messages while rendering, so the published README
+# stays consistent regardless of the contributor's locale. Wrapped in
+# tryCatch because some platforms reject "LC_MESSAGES".
+invisible(tryCatch(
+  Sys.setlocale("LC_MESSAGES", "C"),
+  error = function(e) NULL,
+  warning = function(w) NULL
+))
+Sys.setenv(LANGUAGE = "en")
 ```
 
 # genproc
@@ -36,7 +46,8 @@ Two layers are always active and cannot be disabled:
 - **Reproducibility** — each run records the R version, loaded
   package versions, execution environment, the exact iteration
   mask, and the spec of any optional layer used, so that two runs
-  can be compared and any parameter drift is auditable.
+  can be compared and any change in execution parameters is
+  auditable.
 
 Two optional layers can be composed with the defaults, at the
 caller's choice:
@@ -94,9 +105,12 @@ mask <- data.frame(
 result <- genproc(convert, mask)
 ```
 
-Every run returns a `genproc_result`. The log contains one row per
-case, with stable `case_id`, the parameter values, `success`,
-`error_message`, `traceback`, and `duration_secs`:
+Every run returns a `genproc_result`. The `log` data.frame holds one
+row per case, with `case_id`, the mask parameter values (`src_dir`,
+`src_file`, `dst_dir`, `dst_file` here), then `success`,
+`error_message`, `traceback`, and `duration_secs`. Below we display
+a subset of those columns for readability — `error_message` and
+`traceback` are `NA` on this happy path:
 
 ```{r example-log}
 result$log[, c("case_id", "src_file", "dst_file",
@@ -104,14 +118,16 @@ result$log[, c("case_id", "src_file", "dst_file",
 ```
 
 If a case fails, the run continues — the error is captured, not
-thrown. Here we delete one source file on purpose before a second
-run:
+thrown. Below we point one row of the mask to a file that does not
+exist; `b.csv` itself is left untouched on disk so subsequent
+sections of this README can still reference it:
 
 ```{r example-error}
-file.remove(file.path(src_dir, "b.csv"))
+mask_with_missing <- mask
+mask_with_missing$src_file[2] <- "does_not_exist.csv"
 
-result2 <- genproc(convert, mask)
-result2$log[result2$log$success == FALSE,
+result2 <- genproc(convert, mask_with_missing)
+result2$log[!result2$log$success,
             c("case_id", "src_file", "error_message")]
 result2$n_success
 result2$n_error

@@ -9,11 +9,14 @@ Description: A framework that turns one-off iterative R procedures (such
     layers. Two layers are always active: structured logging with real
     traceback and per-case timing; and reproducibility capture, which
     records the R version, loaded package versions, execution environment,
-    and the exact iteration mask. Parallel execution (via the 'future'
+    the exact iteration mask, and a stat-based fingerprint of every input
+    file referenced in the mask (with a 'diff_inputs()' helper to detect
+    silent drift between runs). Parallel execution (via the 'future'
     ecosystem) and non-blocking background jobs are implemented as
     optional, composable layers. Further layers (monitored progress, error
-    replay, input file hashing) are planned and will remain composable
-    with the default layers.
+    replay, content-hash input fingerprinting, content-based case
+    identifiers) are planned and will remain composable with the default
+    layers.
 License: MIT + file LICENSE
 URL: https://github.com/danielrak/genproc,
     https://danielrak.github.io/genproc/
