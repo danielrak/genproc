@@ -75,17 +75,17 @@ Column order is designed for a human scanning a run:
 ``` r
 result$log
 #>     case_id                              src_dir src_file
-#> 1 case_0001 /tmp/Rtmp6KZPqY/genproc-vignette-src    a.csv
-#> 2 case_0002 /tmp/Rtmp6KZPqY/genproc-vignette-src    b.csv
-#> 3 case_0003 /tmp/Rtmp6KZPqY/genproc-vignette-src    c.csv
+#> 1 case_0001 /tmp/RtmpQcEMBK/genproc-vignette-src    a.csv
+#> 2 case_0002 /tmp/RtmpQcEMBK/genproc-vignette-src    b.csv
+#> 3 case_0003 /tmp/RtmpQcEMBK/genproc-vignette-src    c.csv
 #>                                dst_dir dst_file success error_message traceback
-#> 1 /tmp/Rtmp6KZPqY/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
-#> 2 /tmp/Rtmp6KZPqY/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
-#> 3 /tmp/Rtmp6KZPqY/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
+#> 1 /tmp/RtmpQcEMBK/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
+#> 2 /tmp/RtmpQcEMBK/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
+#> 3 /tmp/RtmpQcEMBK/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
 #>   duration_secs
 #> 1         0.001
 #> 2         0.001
-#> 3         0.000
+#> 3         0.001
 ```
 
 `case_id` is stable and index-based (`case_0001`, `case_0002`, …) for
@@ -97,10 +97,10 @@ of the mask can be reordered between runs.
 ``` r
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-28 19:32:54"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-04-28 21:40:10"
 #>  $ r_version    : chr "R version 4.6.0 (2026-04-24)"
 #>  $ platform     : chr "x86_64-pc-linux-gnu"
-#>  $ os           : chr "Linux 6.17.0-1011-azure"
+#>  $ os           : chr "Linux 6.17.0-1010-azure"
 #>  $ locale       : chr "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C.UTF-8;LC_COLLATE=C.UTF-8;LC_MONETARY=C.UTF-8;LC_MESSAGES=C;LC_PAPER=C.U"| __truncated__
 #>  $ timezone     : chr "UTC"
 #>  $ packages     : Named chr [1:33] "0.0.0.9000" "0.6.39" "1.4.3" "2.6.1" ...
@@ -171,9 +171,38 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                         path size               mtime
-#> 1 /tmp/Rtmp6KZPqY/genproc-vignette-src/a.csv  214 2026-04-28 19:32:54
-#> 2 /tmp/Rtmp6KZPqY/genproc-vignette-src/b.csv  296 2026-04-28 19:32:54
-#> 3 /tmp/Rtmp6KZPqY/genproc-vignette-src/c.csv  154 2026-04-28 19:32:54
+#> 1 /tmp/RtmpQcEMBK/genproc-vignette-src/a.csv  214 2026-04-28 21:40:10
+#> 2 /tmp/RtmpQcEMBK/genproc-vignette-src/b.csv  296 2026-04-28 21:40:10
+#> 3 /tmp/RtmpQcEMBK/genproc-vignette-src/c.csv  154 2026-04-28 21:40:10
+```
+
+#### Shared inputs are deduplicated
+
+Many cases referencing the **same** upstream file produce a single row
+in `files` but one row per case in `refs`. This keeps the snapshot
+economical for masks where every case shares a configuration, schema, or
+lookup table.
+
+``` r
+config_path <- file.path(src_dir, "config.yml")
+writeLines("threshold: 10", config_path)
+
+mask_with_config <- data.frame(
+  csv_in = file.path(src_dir, c("a.csv", "b.csv", "c.csv")),
+  config = config_path,                       # same value across rows
+  stringsAsFactors = FALSE
+)
+do_one_cfg <- function(csv_in, config) nrow(read.csv(csv_in))
+
+run_shared <- genproc(do_one_cfg, mask_with_config)
+
+# 4 rows: 3 unique csv_in + 1 config
+nrow(run_shared$reproducibility$inputs$files)
+#> [1] 4
+
+# 6 rows: 3 cases x 2 input columns
+nrow(run_shared$reproducibility$inputs$refs)
+#> [1] 6
 ```
 
 #### Overrides
@@ -207,9 +236,9 @@ diff_inputs(run0, run1)
 #>   Added:     0
 #> 
 #> Changed files:
-#>   /tmp/Rtmp6KZPqY/genproc-vignette-src/a.csv
+#>   /tmp/RtmpQcEMBK/genproc-vignette-src/a.csv
 #>       size:  214 B -> 3.9 KB
-#>       mtime: 2026-04-28 19:32:54 -> 2026-04-28 19:32:55
+#>       mtime: 2026-04-28 21:40:10 -> 2026-04-28 21:40:11
 ```
 
 [`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
@@ -233,7 +262,7 @@ file.remove(file.path(src_dir, "b.csv"))
 #> [1] TRUE
 result_broken <- genproc(convert, mask)
 #> Warning in file(file, "rt"): cannot open file
-#> '/tmp/Rtmp6KZPqY/genproc-vignette-src/b.csv': No such file or directory
+#> '/tmp/RtmpQcEMBK/genproc-vignette-src/b.csv': No such file or directory
 
 result_broken$n_success
 #> [1] 2
@@ -267,6 +296,93 @@ Restore the file for subsequent sections:
 ``` r
 write.csv(head(mtcars), file.path(src_dir, "b.csv"), row.names = FALSE)
 ```
+
+## Building blocks: extracting `f` and the mask from a working example
+
+The vignette so far assumed both `f` and `mask` were already written by
+hand. In practice you often start from a *working script for one
+specific case* and want to derive the parameterized function and the
+mask template automatically. Three exported helpers do this, in order.
+
+### 1. `from_example_to_function()` — example expression to function
+
+Take an example expression that works on one case. Every external value
+(string literals, environment symbols that are not functions) becomes a
+parameter of the resulting function, with its current value stored as
+the default. Locally bound symbols (assignment targets, function
+formals) are protected.
+
+``` r
+# An example that works for ONE specific case
+input_path  <- file.path(src_dir, "a.csv")
+output_path <- file.path(dst_dir, "a-from-example.rds")
+
+example <- expression({
+  df <- read.csv(input_path)
+  saveRDS(df, output_path)
+})
+
+fn <- from_example_to_function(example)
+formals(fn)
+#> $param_1
+#> [1] "/tmp/RtmpQcEMBK/genproc-vignette-src/a.csv"
+#> 
+#> $param_2
+#> [1] "/tmp/RtmpQcEMBK/genproc-vignette-dst/a-from-example.rds"
+```
+
+### 2. `from_function_to_mask()` — function signature to mask template
+
+Once you have the function, derive a one-row template `data.frame` that
+mirrors its signature. You can then
+[`rbind()`](https://rdrr.io/r/base/cbind.html) extra rows to build a
+full mask.
+
+``` r
+mask_template <- from_function_to_mask(fn)
+mask_template
+#>                                      param_1
+#> 1 /tmp/RtmpQcEMBK/genproc-vignette-src/a.csv
+#>                                                   param_2
+#> 1 /tmp/RtmpQcEMBK/genproc-vignette-dst/a-from-example.rds
+```
+
+### 3. `rename_function_params()` — give the parameters domain names
+
+The auto-generated names (`param_1`, `param_2`, …) are stable but not
+informative. Rename them in place — `formals` and body are updated
+together, the function source is not edited.
+
+``` r
+fn_named <- rename_function_params(
+  fn, c(param_1 = "input_path", param_2 = "output_path")
+)
+formals(fn_named)
+#> $input_path
+#> [1] "/tmp/RtmpQcEMBK/genproc-vignette-src/a.csv"
+#> 
+#> $output_path
+#> [1] "/tmp/RtmpQcEMBK/genproc-vignette-dst/a-from-example.rds"
+```
+
+Putting it together: a renamed function plus a manually-built mask that
+follows the same column names.
+
+``` r
+mask_built <- data.frame(
+  input_path  = file.path(src_dir, c("a.csv", "b.csv", "c.csv")),
+  output_path = file.path(dst_dir, c("a2.rds", "b2.rds", "c2.rds")),
+  stringsAsFactors = FALSE
+)
+genproc(fn_named, mask_built)$n_success
+#> [1] 3
+```
+
+The `f_mapping` argument shown in the next section is the inline
+equivalent of step 3 — convenient when you don’t need a renamed function
+for any other purpose than this single
+[`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+call.
 
 ## Parameter renaming with `f_mapping`
 
