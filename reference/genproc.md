@@ -17,7 +17,16 @@ the mask, and returns a structured result with:
 ## Usage
 
 ``` r
-genproc(f, mask, f_mapping = NULL, parallel = NULL, nonblocking = NULL)
+genproc(
+  f,
+  mask,
+  f_mapping = NULL,
+  parallel = NULL,
+  nonblocking = NULL,
+  track_inputs = TRUE,
+  input_cols = NULL,
+  skip_input_cols = NULL
+)
 ```
 
 ## Arguments
@@ -66,6 +75,29 @@ genproc(f, mask, f_mapping = NULL, parallel = NULL, nonblocking = NULL)
   [`await()`](https://danielrak.github.io/genproc/reference/await.md) to
   block until resolution. Can be combined with `parallel` — the
   non-blocking wrapper envelops the parallel dispatch.
+
+- track_inputs:
+
+  Logical. When `TRUE` (default), genproc detects columns of `mask` that
+  reference input files and records their size + mtime in
+  `result$reproducibility$inputs`. Use
+  [`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
+  to compare two runs and detect silent input drift. Set to `FALSE` to
+  skip input tracking entirely.
+
+- input_cols:
+
+  `NULL` (default) or a character vector of mask column names. When
+  supplied, the heuristic detection is bypassed and exactly these
+  columns are tracked. Paths that do not exist at capture time are
+  recorded with `NA` size/mtime and a warning is emitted. Mutually
+  exclusive with `skip_input_cols`.
+
+- skip_input_cols:
+
+  `NULL` (default) or a character vector of mask column names to exclude
+  from heuristic detection. Useful when a label column happens to match
+  an existing file. Mutually exclusive with `input_cols`.
 
 ## Value
 

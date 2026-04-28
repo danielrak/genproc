@@ -75,13 +75,13 @@ Column order is designed for a human scanning a run:
 ``` r
 result$log
 #>     case_id                              src_dir src_file
-#> 1 case_0001 /tmp/Rtmpcwkj3g/genproc-vignette-src    a.csv
-#> 2 case_0002 /tmp/Rtmpcwkj3g/genproc-vignette-src    b.csv
-#> 3 case_0003 /tmp/Rtmpcwkj3g/genproc-vignette-src    c.csv
+#> 1 case_0001 /tmp/Rtmpj7mT7Z/genproc-vignette-src    a.csv
+#> 2 case_0002 /tmp/Rtmpj7mT7Z/genproc-vignette-src    b.csv
+#> 3 case_0003 /tmp/Rtmpj7mT7Z/genproc-vignette-src    c.csv
 #>                                dst_dir dst_file success error_message traceback
-#> 1 /tmp/Rtmpcwkj3g/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
-#> 2 /tmp/Rtmpcwkj3g/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
-#> 3 /tmp/Rtmpcwkj3g/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
+#> 1 /tmp/Rtmpj7mT7Z/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
+#> 2 /tmp/Rtmpj7mT7Z/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
+#> 3 /tmp/Rtmpj7mT7Z/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
 #>   duration_secs
 #> 1         0.001
 #> 2         0.001
@@ -96,18 +96,19 @@ of the mask can be reordered between runs.
 
 ``` r
 str(result$reproducibility, max.level = 1)
-#> List of 10
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-19 19:25:41"
-#>  $ r_version    : chr "R version 4.5.3 (2026-03-11)"
+#> List of 11
+#>  $ timestamp    : POSIXct[1:1], format: "2026-04-28 19:14:39"
+#>  $ r_version    : chr "R version 4.6.0 (2026-04-24)"
 #>  $ platform     : chr "x86_64-pc-linux-gnu"
-#>  $ os           : chr "Linux 6.17.0-1010-azure"
-#>  $ locale       : chr "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C.UTF-8;LC_COLLATE=C.UTF-8;LC_MONETARY=C.UTF-8;LC_MESSAGES=C.UTF-8;LC_PAP"| __truncated__
+#>  $ os           : chr "Linux 6.17.0-1011-azure"
+#>  $ locale       : chr "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C.UTF-8;LC_COLLATE=C.UTF-8;LC_MONETARY=C.UTF-8;LC_MESSAGES=C;LC_PAPER=C.U"| __truncated__
 #>  $ timezone     : chr "UTC"
 #>  $ packages     : Named chr [1:33] "0.0.0.9000" "0.6.39" "1.4.3" "2.6.1" ...
 #>   ..- attr(*, "names")= chr [1:33] "genproc" "digest" "desc" "R6" ...
 #>  $ mask_snapshot:'data.frame':   3 obs. of  4 variables:
 #>  $ parallel     : NULL
 #>  $ nonblocking  : NULL
+#>  $ inputs       :List of 3
 ```
 
 - `timestamp`: `POSIXct`, start time of the run.
@@ -122,9 +123,105 @@ str(result$reproducibility, max.level = 1)
   formats.
 - `nonblocking`: same pattern, for
   [`nonblocking_spec()`](https://danielrak.github.io/genproc/reference/nonblocking_spec.md).
+- `inputs`: a fingerprint of every file the mask refers to, or `NULL` if
+  input tracking was disabled (`track_inputs = FALSE`). See the next
+  section.
 
 The snapshot lives inside the result. You can compare two results by
 comparing their `$reproducibility` slots directly.
+
+### Input fingerprinting
+
+`reproducibility$inputs` is the layer that protects against silent drift
+of upstream files. It is captured at t0 of the run, alongside the rest
+of the snapshot.
+
+``` r
+str(result$reproducibility$inputs, max.level = 1)
+#> List of 3
+#>  $ method: chr "stat"
+#>  $ files :'data.frame':  0 obs. of  3 variables:
+#>  $ refs  :'data.frame':  0 obs. of  3 variables:
+```
+
+- `method`: currently `"stat"`. Reserved for future extensions
+  (e.g. `"md5"` for content hashing).
+- `files`: a deduplicated table of every file referenced by the mask,
+  with its size in bytes and last-modified time. One row per unique
+  path: a config file shared across 100 cases produces a single row.
+- `refs`: the (`case_id`, `column`, `path`) triples saying who
+  referenced what. Joins back to `files` by `path`.
+
+#### Heuristic detection
+
+By default, every character column of the mask whose non-NA values are
+existing files (and contain a path separator) is treated as an input
+column. The `mask` used in this vignette has its paths split across
+`src_dir` and `src_file`, so the heuristic finds nothing useful —
+`src_dir` is a directory (excluded), `src_file` values are bare names
+(no separator). For a mask that holds absolute paths directly:
+
+``` r
+mask_paths <- data.frame(
+  csv_in = file.path(src_dir, c("a.csv", "b.csv", "c.csv")),
+  stringsAsFactors = FALSE
+)
+do_one <- function(csv_in) nrow(read.csv(csv_in))
+
+run0 <- genproc(do_one, mask_paths)
+run0$reproducibility$inputs$files
+#>                                         path size               mtime
+#> 1 /tmp/Rtmpj7mT7Z/genproc-vignette-src/a.csv  214 2026-04-28 19:14:39
+#> 2 /tmp/Rtmpj7mT7Z/genproc-vignette-src/b.csv  296 2026-04-28 19:14:39
+#> 3 /tmp/Rtmpj7mT7Z/genproc-vignette-src/c.csv  154 2026-04-28 19:14:39
+```
+
+#### Overrides
+
+- `genproc(..., input_cols = c("col1", "col2"))` bypasses the heuristic
+  and tracks exactly the named columns. Paths that don’t exist at
+  capture time are recorded with `NA` size/mtime and a warning is
+  emitted.
+- `genproc(..., skip_input_cols = c("col"))` keeps the heuristic but
+  excludes a column (useful when a label column happens to match an
+  existing file in cwd).
+- `genproc(..., track_inputs = FALSE)` disables tracking entirely.
+  `result$reproducibility$inputs` is `NULL`.
+
+`input_cols` and `skip_input_cols` are mutually exclusive. Mixing them
+raises an error — the two flags express contradictory intentions and the
+call should clarify.
+
+#### Comparing runs with `diff_inputs()`
+
+``` r
+# Rewrite a.csv with strictly more content (size changes)
+write.csv(iris, file.path(src_dir, "a.csv"), row.names = FALSE)
+
+run1 <- genproc(do_one, mask_paths)
+diff_inputs(run0, run1)
+#> genproc input diff (method: stat)
+#>   Changed:   1
+#>   Unchanged: 2
+#>   Removed:   0
+#>   Added:     0
+#> 
+#> Changed files:
+#>   /tmp/Rtmpj7mT7Z/genproc-vignette-src/a.csv
+#>       size:  214 B -> 3.9 KB
+#>       mtime: 2026-04-28 19:14:39 -> 2026-04-28 19:14:39
+```
+
+[`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
+returns an S3 object (`genproc_input_diff`) with a print method for
+human reading and named list components for programmatic access
+(`$changed`, `$unchanged`, `$removed`, `$added`). Files are matched by
+canonical absolute path; cross-machine comparison would need a separate
+matcher and is out of scope for this version.
+
+[`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
+refuses to compare snapshots produced with different `method`s
+(forward-compatible with a future hash mode).
 
 ## How errors are reported
 
@@ -136,7 +233,7 @@ file.remove(file.path(src_dir, "b.csv"))
 #> [1] TRUE
 result_broken <- genproc(convert, mask)
 #> Warning in file(file, "rt"): cannot open file
-#> '/tmp/Rtmpcwkj3g/genproc-vignette-src/b.csv': No such file or directory
+#> '/tmp/Rtmpj7mT7Z/genproc-vignette-src/b.csv': No such file or directory
 
 result_broken$n_success
 #> [1] 2
@@ -336,10 +433,11 @@ specs.
 
 Not yet in the package, but explicitly planned:
 
-- **Input file hashing**: the `reproducibility` layer records the mask,
-  but does not yet hash file inputs referenced in the mask. When a file
-  changes without its path changing, that drift is currently invisible —
-  this will be flagged.
+- **Content-hash input fingerprinting**: the current `inputs` layer uses
+  a stat-based fingerprint (size + mtime), which detects every
+  legitimate file modification but can be fooled by an adversary who
+  preserves both. A `method = "md5"` (or `"xxhash64"`) opt-in is
+  reserved in the API and will land later.
 - **Content-based `case_id`**: today case IDs are index-based. A
   content-based variant will make replay stable even if mask rows are
   reordered.

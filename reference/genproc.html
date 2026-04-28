@@ -61,7 +61,16 @@ per row of the mask, and returns a structured result with:</p><ul><li><p>a log d
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">genproc</span><span class="op">(</span><span class="va">f</span>, <span class="va">mask</span>, f_mapping <span class="op">=</span> <span class="cn">NULL</span>, parallel <span class="op">=</span> <span class="cn">NULL</span>, nonblocking <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">genproc</span><span class="op">(</span></span>
+<span>  <span class="va">f</span>,</span>
+<span>  <span class="va">mask</span>,</span>
+<span>  f_mapping <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  parallel <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nonblocking <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  track_inputs <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  input_cols <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  skip_input_cols <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -104,6 +113,29 @@ the run continues in a background future. Use <code><a href="status.html">status
 poll the state and <code><a href="await.html">await()</a></code> to block until resolution. Can be
 combined with <code>parallel</code> — the non-blocking wrapper envelops
 the parallel dispatch.</p></dd>
+
+
+<dt id="arg-track-inputs">track_inputs<a class="anchor" aria-label="anchor" href="#arg-track-inputs"></a></dt>
+<dd><p>Logical. When <code>TRUE</code> (default), genproc detects
+columns of <code>mask</code> that reference input files and records their
+size + mtime in <code>result$reproducibility$inputs</code>. Use <code><a href="diff_inputs.html">diff_inputs()</a></code>
+to compare two runs and detect silent input drift. Set to <code>FALSE</code>
+to skip input tracking entirely.</p></dd>
+
+
+<dt id="arg-input-cols">input_cols<a class="anchor" aria-label="anchor" href="#arg-input-cols"></a></dt>
+<dd><p><code>NULL</code> (default) or a character vector of mask
+column names. When supplied, the heuristic detection is bypassed
+and exactly these columns are tracked. Paths that do not exist
+at capture time are recorded with <code>NA</code> size/mtime and a warning
+is emitted. Mutually exclusive with <code>skip_input_cols</code>.</p></dd>
+
+
+<dt id="arg-skip-input-cols">skip_input_cols<a class="anchor" aria-label="anchor" href="#arg-skip-input-cols"></a></dt>
+<dd><p><code>NULL</code> (default) or a character vector of
+mask column names to exclude from heuristic detection. Useful
+when a label column happens to match an existing file. Mutually
+exclusive with <code>input_cols</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

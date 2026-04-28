@@ -6,6 +6,8 @@
   : Wrap a function with error handling and a structured log row
 - [`await()`](https://danielrak.github.io/genproc/reference/await.md) :
   Block until a non-blocking genproc run has resolved
+- [`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
+  : Compare input file fingerprints between two genproc runs
 - [`from_example_to_function()`](https://danielrak.github.io/genproc/reference/from_example_to_function.md)
   : Transform an example expression into a parameterized function
 - [`from_function_to_mask()`](https://danielrak.github.io/genproc/reference/from_function_to_mask.md)

@@ -137,13 +137,13 @@ existing ones will never be removed or renamed.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span><span class="op">$</span><span class="va">log</span></span>
 <span><span class="co">#&gt;     case_id                              src_dir src_file</span></span>
-<span><span class="co">#&gt; 1 case_0001 /tmp/Rtmpcwkj3g/genproc-vignette-src    a.csv</span></span>
-<span><span class="co">#&gt; 2 case_0002 /tmp/Rtmpcwkj3g/genproc-vignette-src    b.csv</span></span>
-<span><span class="co">#&gt; 3 case_0003 /tmp/Rtmpcwkj3g/genproc-vignette-src    c.csv</span></span>
+<span><span class="co">#&gt; 1 case_0001 /tmp/Rtmpj7mT7Z/genproc-vignette-src    a.csv</span></span>
+<span><span class="co">#&gt; 2 case_0002 /tmp/Rtmpj7mT7Z/genproc-vignette-src    b.csv</span></span>
+<span><span class="co">#&gt; 3 case_0003 /tmp/Rtmpj7mT7Z/genproc-vignette-src    c.csv</span></span>
 <span><span class="co">#&gt;                                dst_dir dst_file success error_message traceback</span></span>
-<span><span class="co">#&gt; 1 /tmp/Rtmpcwkj3g/genproc-vignette-dst    a.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 2 /tmp/Rtmpcwkj3g/genproc-vignette-dst    b.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 3 /tmp/Rtmpcwkj3g/genproc-vignette-dst    c.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 1 /tmp/Rtmpj7mT7Z/genproc-vignette-dst    a.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 2 /tmp/Rtmpj7mT7Z/genproc-vignette-dst    b.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 3 /tmp/Rtmpj7mT7Z/genproc-vignette-dst    c.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
 <span><span class="co">#&gt;   duration_secs</span></span>
 <span><span class="co">#&gt; 1         0.001</span></span>
 <span><span class="co">#&gt; 2         0.001</span></span>
@@ -158,18 +158,19 @@ mask can be reordered between runs.</p>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">reproducibility</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; List of 10</span></span>
-<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-19 19:25:41"</span></span>
-<span><span class="co">#&gt;  $ r_version    : chr "R version 4.5.3 (2026-03-11)"</span></span>
+<span><span class="co">#&gt; List of 11</span></span>
+<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-28 19:14:39"</span></span>
+<span><span class="co">#&gt;  $ r_version    : chr "R version 4.6.0 (2026-04-24)"</span></span>
 <span><span class="co">#&gt;  $ platform     : chr "x86_64-pc-linux-gnu"</span></span>
-<span><span class="co">#&gt;  $ os           : chr "Linux 6.17.0-1010-azure"</span></span>
-<span><span class="co">#&gt;  $ locale       : chr "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C.UTF-8;LC_COLLATE=C.UTF-8;LC_MONETARY=C.UTF-8;LC_MESSAGES=C.UTF-8;LC_PAP"| __truncated__</span></span>
+<span><span class="co">#&gt;  $ os           : chr "Linux 6.17.0-1011-azure"</span></span>
+<span><span class="co">#&gt;  $ locale       : chr "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C.UTF-8;LC_COLLATE=C.UTF-8;LC_MONETARY=C.UTF-8;LC_MESSAGES=C;LC_PAPER=C.U"| __truncated__</span></span>
 <span><span class="co">#&gt;  $ timezone     : chr "UTC"</span></span>
 <span><span class="co">#&gt;  $ packages     : Named chr [1:33] "0.0.0.9000" "0.6.39" "1.4.3" "2.6.1" ...</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "names")= chr [1:33] "genproc" "digest" "desc" "R6" ...</span></span>
 <span><span class="co">#&gt;  $ mask_snapshot:'data.frame':   3 obs. of  4 variables:</span></span>
 <span><span class="co">#&gt;  $ parallel     : NULL</span></span>
-<span><span class="co">#&gt;  $ nonblocking  : NULL</span></span></code></pre></div>
+<span><span class="co">#&gt;  $ nonblocking  : NULL</span></span>
+<span><span class="co">#&gt;  $ inputs       :List of 3</span></span></code></pre></div>
 <ul>
 <li>
 <code>timestamp</code>: <code>POSIXct</code>, start time of the
@@ -191,9 +192,116 @@ class to make the snapshot portable to serialization formats.</li>
 <li>
 <code>nonblocking</code>: same pattern, for
 <code><a href="../reference/nonblocking_spec.html">nonblocking_spec()</a></code>.</li>
+<li>
+<code>inputs</code>: a fingerprint of every file the mask refers to,
+or <code>NULL</code> if input tracking was disabled
+(<code>track_inputs = FALSE</code>). See the next section.</li>
 </ul>
 <p>The snapshot lives inside the result. You can compare two results by
 comparing their <code>$reproducibility</code> slots directly.</p>
+</div>
+<div class="section level3">
+<h3 id="input-fingerprinting">Input fingerprinting<a class="anchor" aria-label="anchor" href="#input-fingerprinting"></a>
+</h3>
+<p><code>reproducibility$inputs</code> is the layer that protects
+against silent drift of upstream files. It is captured at t0 of the run,
+alongside the rest of the snapshot.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">reproducibility</span><span class="op">$</span><span class="va">inputs</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 3</span></span>
+<span><span class="co">#&gt;  $ method: chr "stat"</span></span>
+<span><span class="co">#&gt;  $ files :'data.frame':  0 obs. of  3 variables:</span></span>
+<span><span class="co">#&gt;  $ refs  :'data.frame':  0 obs. of  3 variables:</span></span></code></pre></div>
+<ul>
+<li>
+<code>method</code>: currently <code>"stat"</code>. Reserved for
+future extensions (e.g. <code>"md5"</code> for content hashing).</li>
+<li>
+<code>files</code>: a deduplicated table of every file referenced by
+the mask, with its size in bytes and last-modified time. One row per
+unique path: a config file shared across 100 cases produces a single
+row.</li>
+<li>
+<code>refs</code>: the (<code>case_id</code>, <code>column</code>,
+<code>path</code>) triples saying who referenced what. Joins back to
+<code>files</code> by <code>path</code>.</li>
+</ul>
+<div class="section level4">
+<h4 id="heuristic-detection">Heuristic detection<a class="anchor" aria-label="anchor" href="#heuristic-detection"></a>
+</h4>
+<p>By default, every character column of the mask whose non-NA values
+are existing files (and contain a path separator) is treated as an input
+column. The <code>mask</code> used in this vignette has its paths split
+across <code>src_dir</code> and <code>src_file</code>, so the heuristic
+finds nothing useful — <code>src_dir</code> is a directory (excluded),
+<code>src_file</code> values are bare names (no separator). For a mask
+that holds absolute paths directly:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mask_paths</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  csv_in <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">src_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a.csv"</span>, <span class="st">"b.csv"</span>, <span class="st">"c.csv"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">do_one</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">csv_in</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">csv_in</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">run0</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">do_one</span>, <span class="va">mask_paths</span><span class="op">)</span></span>
+<span><span class="va">run0</span><span class="op">$</span><span class="va">reproducibility</span><span class="op">$</span><span class="va">inputs</span><span class="op">$</span><span class="va">files</span></span>
+<span><span class="co">#&gt;                                         path size               mtime</span></span>
+<span><span class="co">#&gt; 1 /tmp/Rtmpj7mT7Z/genproc-vignette-src/a.csv  214 2026-04-28 19:14:39</span></span>
+<span><span class="co">#&gt; 2 /tmp/Rtmpj7mT7Z/genproc-vignette-src/b.csv  296 2026-04-28 19:14:39</span></span>
+<span><span class="co">#&gt; 3 /tmp/Rtmpj7mT7Z/genproc-vignette-src/c.csv  154 2026-04-28 19:14:39</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="overrides">Overrides<a class="anchor" aria-label="anchor" href="#overrides"></a>
+</h4>
+<ul>
+<li>
+<code>genproc(..., input_cols = c("col1", "col2"))</code> bypasses
+the heuristic and tracks exactly the named columns. Paths that don’t
+exist at capture time are recorded with <code>NA</code> size/mtime and a
+warning is emitted.</li>
+<li>
+<code>genproc(..., skip_input_cols = c("col"))</code> keeps the
+heuristic but excludes a column (useful when a label column happens to
+match an existing file in cwd).</li>
+<li>
+<code>genproc(..., track_inputs = FALSE)</code> disables tracking
+entirely. <code>result$reproducibility$inputs</code> is
+<code>NULL</code>.</li>
+</ul>
+<p><code>input_cols</code> and <code>skip_input_cols</code> are mutually
+exclusive. Mixing them raises an error — the two flags express
+contradictory intentions and the call should clarify.</p>
+</div>
+<div class="section level4">
+<h4 id="comparing-runs-with-diff_inputs">Comparing runs with <code>diff_inputs()</code><a class="anchor" aria-label="anchor" href="#comparing-runs-with-diff_inputs"></a>
+</h4>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Rewrite a.csv with strictly more content (size changes)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">iris</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">src_dir</span>, <span class="st">"a.csv"</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">run1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">do_one</span>, <span class="va">mask_paths</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/diff_inputs.html">diff_inputs</a></span><span class="op">(</span><span class="va">run0</span>, <span class="va">run1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; genproc input diff (method: stat)</span></span>
+<span><span class="co">#&gt;   Changed:   1</span></span>
+<span><span class="co">#&gt;   Unchanged: 2</span></span>
+<span><span class="co">#&gt;   Removed:   0</span></span>
+<span><span class="co">#&gt;   Added:     0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Changed files:</span></span>
+<span><span class="co">#&gt;   /tmp/Rtmpj7mT7Z/genproc-vignette-src/a.csv</span></span>
+<span><span class="co">#&gt;       size:  214 B -&gt; 3.9 KB</span></span>
+<span><span class="co">#&gt;       mtime: 2026-04-28 19:14:39 -&gt; 2026-04-28 19:14:39</span></span></code></pre></div>
+<p><code><a href="../reference/diff_inputs.html">diff_inputs()</a></code> returns an S3 object
+(<code>genproc_input_diff</code>) with a print method for human reading
+and named list components for programmatic access
+(<code>$changed</code>, <code>$unchanged</code>, <code>$removed</code>,
+<code>$added</code>). Files are matched by canonical absolute path;
+cross-machine comparison would need a separate matcher and is out of
+scope for this version.</p>
+<p><code><a href="../reference/diff_inputs.html">diff_inputs()</a></code> refuses to compare snapshots produced with
+different <code>method</code>s (forward-compatible with a future hash
+mode).</p>
+</div>
 </div>
 </div>
 <div class="section level2">
@@ -201,12 +309,12 @@ comparing their <code>$reproducibility</code> slots directly.</p>
 </h2>
 <p>A case that throws does <strong>not</strong> stop the run. Here we
 delete a source file between two runs:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.remove</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">src_dir</span>, <span class="st">"b.csv"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">result_broken</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in file(file, "rt"): cannot open file</span></span>
-<span><span class="co">#&gt; '/tmp/Rtmpcwkj3g/genproc-vignette-src/b.csv': No such file or directory</span></span>
+<span><span class="co">#&gt; '/tmp/Rtmpj7mT7Z/genproc-vignette-src/b.csv': No such file or directory</span></span>
 <span></span>
 <span><span class="va">result_broken</span><span class="op">$</span><span class="va">n_success</span></span>
 <span><span class="co">#&gt; [1] 2</span></span>
@@ -214,7 +322,7 @@ delete a source file between two runs:</p>
 <span><span class="co">#&gt; [1] 1</span></span></code></pre></div>
 <p>The failing row carries the error message and a filtered
 traceback:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bad</span> <span class="op">&lt;-</span> <span class="va">result_broken</span><span class="op">$</span><span class="va">log</span><span class="op">[</span><span class="op">!</span><span class="va">result_broken</span><span class="op">$</span><span class="va">log</span><span class="op">$</span><span class="va">success</span>, <span class="op">]</span></span>
 <span><span class="va">bad</span><span class="op">$</span><span class="va">error_message</span></span>
 <span><span class="co">#&gt; [1] "cannot open the connection"</span></span>
@@ -228,7 +336,7 @@ string pulled out of <code><a href="https://rdrr.io/r/base/conditions.html" clas
 <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code> and <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">withCallingHandlers()</a></code> frames
 are filtered out so the trace reads like a normal R error.</p>
 <p>Restore the file for subsequent sections:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">src_dir</span>, <span class="st">"b.csv"</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -237,7 +345,7 @@ are filtered out so the trace reads like a normal R error.</p>
 <p>If the function you already have uses parameter names that don’t
 match your mask’s column names, <code>f_mapping</code> renames them in
 place without touching the source:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># `f` uses generic names; the mask uses domain names.</span></span>
 <span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">input_dir</span>, <span class="va">input_file</span>, <span class="va">output_dir</span>, <span class="va">output_file</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">input_dir</span>, <span class="va">input_file</span><span class="op">)</span><span class="op">)</span></span>
@@ -265,7 +373,7 @@ are started lazily by <code>future</code> when the plan is resolved.</p>
 </h3>
 <p>Across many <code><a href="../reference/genproc.html">genproc()</a></code> calls in the same session,
 installing the plan once amortizes worker startup:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">future</span><span class="fu">::</span><span class="fu"><a href="https://future.futureverse.org/reference/plan.html" class="external-link">plan</a></span><span class="op">(</span><span class="fu">future</span><span class="fu">::</span><span class="va"><a href="https://future.futureverse.org/reference/multisession.html" class="external-link">multisession</a></span>, workers <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">result_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span>, parallel <span class="op">=</span> <span class="fu"><a href="../reference/parallel_spec.html">parallel_spec</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
@@ -280,7 +388,7 @@ installing the plan once amortizes worker startup:</p>
 that single call and restores the previous plan on exit. This avoids the
 silent trap of <code>workers = N</code> being ignored because the
 current plan is <code>sequential</code>:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span>, parallel <span class="op">=</span> <span class="fu"><a href="../reference/parallel_spec.html">parallel_spec</a></span><span class="op">(</span>workers <span class="op">=</span> <span class="fl">4</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -304,7 +412,7 @@ chunking. To pin the master, pass an integer:
 <div class="section level2">
 <h2 id="non-blocking-execution-in-depth">Non-blocking execution in depth<a class="anchor" aria-label="anchor" href="#non-blocking-execution-in-depth"></a>
 </h2>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span>, nonblocking <span class="op">=</span> <span class="fu"><a href="../reference/nonblocking_spec.html">nonblocking_spec</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/status.html">status</a></span><span class="op">(</span><span class="va">job</span><span class="op">)</span>         <span class="co"># "running" or "done"</span></span>
 <span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/await.html">await</a></span><span class="op">(</span><span class="va">job</span><span class="op">)</span>   <span class="co"># blocks until resolution</span></span>
@@ -374,7 +482,7 @@ manage the plan themselves are not affected.</p>
 <h2 id="composition-parallel-non-blocking">Composition: parallel × non-blocking<a class="anchor" aria-label="anchor" href="#composition-parallel-non-blocking"></a>
 </h2>
 <p>The two optional layers are orthogonal:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span></span>
 <span>  <span class="va">convert</span>, <span class="va">mask</span>,</span>
 <span>  parallel    <span class="op">=</span> <span class="fu"><a href="../reference/parallel_spec.html">parallel_spec</a></span><span class="op">(</span>workers <span class="op">=</span> <span class="fl">6</span><span class="op">)</span>,</span>
@@ -397,11 +505,12 @@ explicitly and pass <code>strategy = NULL</code> on both specs.</p>
 <p>Not yet in the package, but explicitly planned:</p>
 <ul>
 <li>
-<strong>Input file hashing</strong>: the
-<code>reproducibility</code> layer records the mask, but does not yet
-hash file inputs referenced in the mask. When a file changes without its
-path changing, that drift is currently invisible — this will be
-flagged.</li>
+<strong>Content-hash input fingerprinting</strong>: the current
+<code>inputs</code> layer uses a stat-based fingerprint (size + mtime),
+which detects every legitimate file modification but can be fooled by an
+adversary who preserves both. A <code>method = "md5"</code> (or
+<code>"xxhash64"</code>) opt-in is reserved in the API and will land
+later.</li>
 <li>
 <strong>Content-based <code>case_id</code></strong>: today case IDs
 are index-based. A content-based variant will make replay stable even if
