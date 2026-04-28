@@ -163,6 +163,33 @@ run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 ```
 
+#### Shared inputs are deduplicated
+
+Many cases referencing the **same** upstream file produce a single row
+in `files` but one row per case in `refs`. This keeps the snapshot
+economical for masks where every case shares a configuration, schema,
+or lookup table.
+
+```{r inputs-dedup}
+config_path <- file.path(src_dir, "config.yml")
+writeLines("threshold: 10", config_path)
+
+mask_with_config <- data.frame(
+  csv_in = file.path(src_dir, c("a.csv", "b.csv", "c.csv")),
+  config = config_path,                       # same value across rows
+  stringsAsFactors = FALSE
+)
+do_one_cfg <- function(csv_in, config) nrow(read.csv(csv_in))
+
+run_shared <- genproc(do_one_cfg, mask_with_config)
+
+# 4 rows: 3 unique csv_in + 1 config
+nrow(run_shared$reproducibility$inputs$files)
+
+# 6 rows: 3 cases x 2 input columns
+nrow(run_shared$reproducibility$inputs$refs)
+```
+
 #### Overrides
 
 - `genproc(..., input_cols = c("col1", "col2"))` bypasses the
@@ -231,6 +258,75 @@ Restore the file for subsequent sections:
 ```{r restore}
 write.csv(head(mtcars), file.path(src_dir, "b.csv"), row.names = FALSE)
 ```
+
+## Building blocks: extracting `f` and the mask from a working example
+
+The vignette so far assumed both `f` and `mask` were already written
+by hand. In practice you often start from a *working script for one
+specific case* and want to derive the parameterized function and the
+mask template automatically. Three exported helpers do this, in order.
+
+### 1. `from_example_to_function()` — example expression to function
+
+Take an example expression that works on one case. Every external
+value (string literals, environment symbols that are not functions)
+becomes a parameter of the resulting function, with its current value
+stored as the default. Locally bound symbols (assignment targets,
+function formals) are protected.
+
+```{r blocks-fef}
+# An example that works for ONE specific case
+input_path  <- file.path(src_dir, "a.csv")
+output_path <- file.path(dst_dir, "a-from-example.rds")
+
+example <- expression({
+  df <- read.csv(input_path)
+  saveRDS(df, output_path)
+})
+
+fn <- from_example_to_function(example)
+formals(fn)
+```
+
+### 2. `from_function_to_mask()` — function signature to mask template
+
+Once you have the function, derive a one-row template `data.frame`
+that mirrors its signature. You can then `rbind()` extra rows to
+build a full mask.
+
+```{r blocks-ftm}
+mask_template <- from_function_to_mask(fn)
+mask_template
+```
+
+### 3. `rename_function_params()` — give the parameters domain names
+
+The auto-generated names (`param_1`, `param_2`, ...) are stable but
+not informative. Rename them in place — `formals` and body are
+updated together, the function source is not edited.
+
+```{r blocks-rfp}
+fn_named <- rename_function_params(
+  fn, c(param_1 = "input_path", param_2 = "output_path")
+)
+formals(fn_named)
+```
+
+Putting it together: a renamed function plus a manually-built mask
+that follows the same column names.
+
+```{r blocks-full}
+mask_built <- data.frame(
+  input_path  = file.path(src_dir, c("a.csv", "b.csv", "c.csv")),
+  output_path = file.path(dst_dir, c("a2.rds", "b2.rds", "c2.rds")),
+  stringsAsFactors = FALSE
+)
+genproc(fn_named, mask_built)$n_success
+```
+
+The `f_mapping` argument shown in the next section is the inline
+equivalent of step 3 — convenient when you don't need a renamed
+function for any other purpose than this single `genproc()` call.
 
 ## Parameter renaming with `f_mapping`
 
