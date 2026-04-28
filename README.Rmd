@@ -124,13 +124,53 @@ so debugging a failed case reads like a normal R error.
 ## The reproducibility snapshot
 
 `result$reproducibility` is a plain list recording the R version,
-OS, timezone, loaded package versions, the exact mask used, and
-the specs of any optional layer. This snapshot lives inside the
-result — no side file to keep in sync:
+OS, timezone, loaded package versions, the exact mask used, the
+specs of any optional layer, and a fingerprint of every input file
+referenced by the mask. This snapshot lives inside the result —
+no side file to keep in sync:
 
 ```{r repro}
 str(result$reproducibility, max.level = 1)
 ```
+
+## Detecting silent input drift
+
+`result$reproducibility$inputs` records the size and mtime of every
+input file the mask refers to. The intent is to flag the most
+common reproducibility failure: re-running the same code on the
+same paths after an upstream file has been silently rewritten.
+
+genproc detects input columns automatically: any character column
+of the mask whose values are existing files is treated as such.
+Pass `track_inputs = FALSE` to skip the capture, or override the
+heuristic with `input_cols = c(...)` (force) or
+`skip_input_cols = c(...)` (exclude).
+
+```{r inputs-setup}
+mask_paths <- data.frame(
+  csv_in = file.path(src_dir, c("a.csv", "b.csv", "c.csv")),
+  stringsAsFactors = FALSE
+)
+do_one <- function(csv_in) nrow(read.csv(csv_in))
+
+run0 <- genproc(do_one, mask_paths)
+run0$reproducibility$inputs$files
+```
+
+`diff_inputs()` compares two runs and tells you which referenced
+files have changed since the first one:
+
+```{r inputs-drift}
+# Rewrite a.csv with strictly more content (size changes)
+write.csv(iris, file.path(src_dir, "a.csv"), row.names = FALSE)
+
+run1 <- genproc(do_one, mask_paths)
+diff_inputs(run0, run1)
+```
+
+The default method is `"stat"` (size + mtime). It detects every
+legitimate modification at near-zero cost; a content-hash variant
+is on the roadmap for stronger guarantees on adversarial workloads.
 
 ## Parallel execution
 

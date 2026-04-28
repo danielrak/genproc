@@ -106,9 +106,88 @@ str(result$reproducibility, max.level = 1)
   the `parallel_spec()` used. Dropped class to make the snapshot
   portable to serialization formats.
 - `nonblocking`: same pattern, for `nonblocking_spec()`.
+- `inputs`: a fingerprint of every file the mask refers to, or
+  `NULL` if input tracking was disabled (`track_inputs = FALSE`).
+  See the next section.
 
 The snapshot lives inside the result. You can compare two results
 by comparing their `$reproducibility` slots directly.
+
+### Input fingerprinting
+
+`reproducibility$inputs` is the layer that protects against silent
+drift of upstream files. It is captured at t0 of the run, alongside
+the rest of the snapshot.
+
+```{r inputs-shape}
+str(result$reproducibility$inputs, max.level = 1)
+```
+
+- `method`: currently `"stat"`. Reserved for future extensions
+  (e.g. `"md5"` for content hashing).
+- `files`: a deduplicated table of every file referenced by the
+  mask, with its size in bytes and last-modified time. One row per
+  unique path: a config file shared across 100 cases produces a
+  single row.
+- `refs`: the (`case_id`, `column`, `path`) triples saying who
+  referenced what. Joins back to `files` by `path`.
+
+#### Heuristic detection
+
+By default, every character column of the mask whose non-NA values
+are existing files (and contain a path separator) is treated as an
+input column. The `mask` used in this vignette has its paths split
+across `src_dir` and `src_file`, so the heuristic finds nothing
+useful — `src_dir` is a directory (excluded), `src_file` values
+are bare names (no separator). For a mask that holds absolute
+paths directly:
+
+```{r inputs-auto}
+mask_paths <- data.frame(
+  csv_in = file.path(src_dir, c("a.csv", "b.csv", "c.csv")),
+  stringsAsFactors = FALSE
+)
+do_one <- function(csv_in) nrow(read.csv(csv_in))
+
+run0 <- genproc(do_one, mask_paths)
+run0$reproducibility$inputs$files
+```
+
+#### Overrides
+
+- `genproc(..., input_cols = c("col1", "col2"))` bypasses the
+  heuristic and tracks exactly the named columns. Paths that don't
+  exist at capture time are recorded with `NA` size/mtime and a
+  warning is emitted.
+- `genproc(..., skip_input_cols = c("col"))` keeps the heuristic
+  but excludes a column (useful when a label column happens to
+  match an existing file in cwd).
+- `genproc(..., track_inputs = FALSE)` disables tracking entirely.
+  `result$reproducibility$inputs` is `NULL`.
+
+`input_cols` and `skip_input_cols` are mutually exclusive. Mixing
+them raises an error — the two flags express contradictory
+intentions and the call should clarify.
+
+#### Comparing runs with `diff_inputs()`
+
+```{r inputs-diff}
+# Rewrite a.csv with strictly more content (size changes)
+write.csv(iris, file.path(src_dir, "a.csv"), row.names = FALSE)
+
+run1 <- genproc(do_one, mask_paths)
+diff_inputs(run0, run1)
+```
+
+`diff_inputs()` returns an S3 object (`genproc_input_diff`) with a
+print method for human reading and named list components for
+programmatic access (`$changed`, `$unchanged`, `$removed`, `$added`).
+Files are matched by canonical absolute path; cross-machine
+comparison would need a separate matcher and is out of scope for
+this version.
+
+`diff_inputs()` refuses to compare snapshots produced with
+different `method`s (forward-compatible with a future hash mode).
 
 ## How errors are reported
 
@@ -295,10 +374,11 @@ both specs.
 
 Not yet in the package, but explicitly planned:
 
-- **Input file hashing**: the `reproducibility` layer records the
-  mask, but does not yet hash file inputs referenced in the mask.
-  When a file changes without its path changing, that drift is
-  currently invisible — this will be flagged.
+- **Content-hash input fingerprinting**: the current `inputs` layer
+  uses a stat-based fingerprint (size + mtime), which detects every
+  legitimate file modification but can be fooled by an adversary who
+  preserves both. A `method = "md5"` (or `"xxhash64"`) opt-in is
+  reserved in the API and will land later.
 - **Content-based `case_id`**: today case IDs are index-based. A
   content-based variant will make replay stable even if mask rows
   are reordered.

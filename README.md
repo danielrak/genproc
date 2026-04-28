@@ -91,9 +91,9 @@ with stable `case_id`, the parameter values, `success`, `error_message`,
 result$log[, c("case_id", "src_file", "dst_file",
                "success", "duration_secs")]
 #>     case_id src_file dst_file success duration_secs
-#> 1 case_0001    a.csv    a.rds    TRUE          0.00
-#> 2 case_0002    b.csv    b.rds    TRUE          0.00
-#> 3 case_0003    c.csv    c.rds    TRUE          0.01
+#> 1 case_0001    a.csv    a.rds    TRUE             0
+#> 2 case_0002    b.csv    b.rds    TRUE             0
+#> 3 case_0003    c.csv    c.rds    TRUE             0
 ```
 
 If a case fails, the run continues — the error is captured, not thrown.
@@ -105,7 +105,7 @@ file.remove(file.path(src_dir, "b.csv"))
 
 result2 <- genproc(convert, mask)
 #> Warning in file(file, "rt"): impossible d'ouvrir le fichier
-#> 'C:\Users\rheri\AppData\Local\Temp\Rtmp69udKt/src/b.csv' : No such file or
+#> 'C:\Users\rheri\AppData\Local\Temp\RtmpegrrE4/src/b.csv' : No such file or
 #> directory
 result2$log[result2$log$success == FALSE,
             c("case_id", "src_file", "error_message")]
@@ -124,25 +124,79 @@ debugging a failed case reads like a normal R error.
 ## The reproducibility snapshot
 
 `result$reproducibility` is a plain list recording the R version, OS,
-timezone, loaded package versions, the exact mask used, and the specs of
-any optional layer. This snapshot lives inside the result — no side file
-to keep in sync:
+timezone, loaded package versions, the exact mask used, the specs of any
+optional layer, and a fingerprint of every input file referenced by the
+mask. This snapshot lives inside the result — no side file to keep in
+sync:
 
 ``` r
 str(result$reproducibility, max.level = 1)
-#> List of 10
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-19 22:22:03"
-#>  $ r_version    : chr "R version 4.5.3 (2026-03-11 ucrt)"
+#> List of 11
+#>  $ timestamp    : POSIXct[1:1], format: "2026-04-28 19:37:59"
+#>  $ r_version    : chr "R version 4.5.1 (2025-06-13 ucrt)"
 #>  $ platform     : chr "x86_64-w64-mingw32"
 #>  $ os           : chr "Windows 10 x64"
 #>  $ locale       : chr "LC_COLLATE=French_France.utf8;LC_CTYPE=French_France.utf8;LC_MONETARY=French_France.utf8;LC_NUMERIC=C;LC_TIME=F"| __truncated__
-#>  $ timezone     : chr "Africa/Nairobi"
-#>  $ packages     : Named chr [1:23] "0.0.0.9000" "4.5.3" "1.2.0" "3.6.6" ...
-#>   ..- attr(*, "names")= chr [1:23] "genproc" "compiler" "fastmap" "cli" ...
+#>  $ timezone     : chr "Europe/Paris"
+#>  $ packages     : Named chr [1:22] "0.0.0.9000" "4.5.1" "1.2.0" "3.6.5" ...
+#>   ..- attr(*, "names")= chr [1:22] "genproc" "compiler" "fastmap" "cli" ...
 #>  $ mask_snapshot:'data.frame':   3 obs. of  4 variables:
 #>  $ parallel     : NULL
 #>  $ nonblocking  : NULL
+#>  $ inputs       :List of 3
 ```
+
+## Detecting silent input drift
+
+`result$reproducibility$inputs` records the size and mtime of every
+input file the mask refers to. The intent is to flag the most common
+reproducibility failure: re-running the same code on the same paths
+after an upstream file has been silently rewritten.
+
+genproc detects input columns automatically: any character column of the
+mask whose values are existing files is treated as such. Pass
+`track_inputs = FALSE` to skip the capture, or override the heuristic
+with `input_cols = c(...)` (force) or `skip_input_cols = c(...)`
+(exclude).
+
+``` r
+mask_paths <- data.frame(
+  csv_in = file.path(src_dir, c("a.csv", "b.csv", "c.csv")),
+  stringsAsFactors = FALSE
+)
+do_one <- function(csv_in) nrow(read.csv(csv_in))
+
+run0 <- genproc(do_one, mask_paths)
+#> Warning in file(file, "rt"): impossible d'ouvrir le fichier
+#> 'C:\Users\rheri\AppData\Local\Temp\RtmpegrrE4/src/b.csv' : No such file or
+#> directory
+run0$reproducibility$inputs$files
+#> [1] path  size  mtime
+#> <0 lignes> (ou 'row.names' de longueur nulle)
+```
+
+`diff_inputs()` compares two runs and tells you which referenced files
+have changed since the first one:
+
+``` r
+# Rewrite a.csv with strictly more content (size changes)
+write.csv(iris, file.path(src_dir, "a.csv"), row.names = FALSE)
+
+run1 <- genproc(do_one, mask_paths)
+#> Warning in file(file, "rt"): impossible d'ouvrir le fichier
+#> 'C:\Users\rheri\AppData\Local\Temp\RtmpegrrE4/src/b.csv' : No such file or
+#> directory
+diff_inputs(run0, run1)
+#> genproc input diff (method: stat)
+#>   Changed:   0
+#>   Unchanged: 0
+#>   Removed:   0
+#>   Added:     0
+```
+
+The default method is `"stat"` (size + mtime). It detects every
+legitimate modification at near-zero cost; a content-hash variant is on
+the roadmap for stronger guarantees on adversarial workloads.
 
 ## Parallel execution
 
