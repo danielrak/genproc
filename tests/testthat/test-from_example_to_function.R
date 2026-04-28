@@ -297,6 +297,114 @@ test_that("same symbol used twice creates only one parameter", {
 })
 
 
+# === Coverage gaps for assignment variants ====================================
+
+test_that("`=` operator inside a block also creates local binding", {
+  e <- new.env(parent = baseenv())
+  e$x <- 42
+
+  fn <- from_example_to_function(
+    expression({
+      x = 1
+      y <- x + 1
+    }),
+    env = e
+  )
+
+  # `=` is an assignment operator just like `<-` -> x is locally bound,
+  # must not be parameterized.
+  expect_length(formals(fn), 0)
+})
+
+test_that("`<<-` operator also creates local binding", {
+  e <- new.env(parent = baseenv())
+  e$x <- 42
+
+  fn <- from_example_to_function(
+    expression({
+      x <<- 1
+      y <- x + 1
+    }),
+    env = e
+  )
+
+  expect_length(formals(fn), 0)
+})
+
+test_that("assignment target that is not a bare symbol does not bind", {
+  e <- new.env(parent = baseenv())
+  e$x <- list(y = 0)
+
+  # `x$y <- 1` is an assignment but the target is `x$y`, not a bare
+  # symbol — assignment_target() returns NULL for it, so no new local
+  # binding for `x` is recorded. We verify this indirectly: `x` is
+  # referenced in a later statement and should still be parameterized.
+  fn <- from_example_to_function(
+    expression({
+      x$y <- 1
+      print(x)
+    }),
+    env = e
+  )
+
+  # `x` in `print(x)` is still external (no binding from x$y <-) so it
+  # is parameterized. `print` is a function in baseenv -> not parameterized.
+  fmls <- formals(fn)
+  expect_length(fmls, 1)
+  expect_equal(fmls$param_1, list(y = 0))
+})
+
+
+# === Coverage gaps for calls and function defs ================================
+
+test_that("missing argument placeholder in a call is preserved", {
+  # f(a, , b) parses with an empty symbol in position 3. The rewriter
+  # must not crash on it (rewrite_call skips it via is_missing_arg_node).
+  e <- new.env(parent = baseenv())
+  e$path <- "/data/in.csv"
+
+  expect_no_error(
+    fn <- from_example_to_function(
+      expression(matrix(path, , 2)),
+      env = e
+    )
+  )
+
+  expect_length(formals(fn), 1)
+  expect_true(grepl("matrix", deparse(body(fn))))
+})
+
+test_that("function definition with `...` does not parameterize the dots", {
+  e <- new.env(parent = baseenv())
+  e$offset <- 10
+
+  fn <- from_example_to_function(
+    expression(function(x, ...) x + offset),
+    env = e
+  )
+
+  # `...` is filtered out of the bound names; only `x` is bound.
+  # `offset` is the only external value -> one parameter.
+  expect_length(formals(fn), 1)
+  expect_equal(formals(fn)$param_1, 10)
+})
+
+test_that("nested function definitions preserve scoping per level", {
+  e <- new.env(parent = baseenv())
+  e$outer <- 100
+
+  fn <- from_example_to_function(
+    expression(function(a) function(b) a + b + outer),
+    env = e
+  )
+
+  # `a` is bound in the outer body, `b` in the inner. `outer` is
+  # the only external value -> exactly one parameter.
+  expect_length(formals(fn), 1)
+  expect_equal(formals(fn)$param_1, 100)
+})
+
+
 # === Edge cases ===============================================================
 
 test_that("empty block is handled", {

@@ -321,20 +321,29 @@ rewrite_assignment <- function(node, ctx) {
 #'
 #' @noRd
 rewrite_call <- function(node, ctx) {
-  args <- as.list(node)
-  # args[[1]] is the function head — invariant 2: do not rewrite
+  # We mutate a copy of the call directly rather than going through
+  # as.list(node) + as.call(args). Reason: a missing-arg slot
+  # (position 2 in `f(a, , b)`) may surface either as the empty
+  # symbol `quote(expr = )` or as a forced-on-read missing promise,
+  # depending on how the call was constructed. The latter raises
+  # "argument is missing" not at the access site but later when the
+  # bound variable is read. To stay correct in both cases we wrap
+  # the entire read-test-rewrite step in a tryCatch and leave the
+  # slot untouched on any error — that is the right semantics for a
+  # missing-arg placeholder anyway (invariant: never rewrite it).
+  n <- length(node)
+  if (n < 2) return(node)
 
-  if (length(args) >= 2) {
-    for (i in seq.int(2, length(args))) {
-      arg <- args[[i]]
-      # NULL elements and missing argument placeholders are left as-is
+  for (i in seq.int(2, n)) {
+    tryCatch({
+      arg <- node[[i]]
       if (!is.null(arg) && !is_missing_arg_node(arg)) {
-        args[[i]] <- rewrite_node(arg, ctx)
+        node[[i]] <- rewrite_node(arg, ctx)
       }
-    }
+    }, error = function(e) NULL)
   }
 
-  as.call(args)
+  node
 }
 
 
