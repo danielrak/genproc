@@ -30,6 +30,7 @@ reference:
   contents:
   - errors
   - summary.genproc_result
+  - print.genproc_result_summary
   - rerun_failed
 
 - title: Reproducibility tooling
