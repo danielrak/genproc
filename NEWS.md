@@ -1,6 +1,36 @@
 # genproc 0.2.0 (development version)
 
+## New features
+
+* New `rerun_affected(r0, diff, f)` helper. Closes the
+  reproducibility loop: when [diff_inputs()] reports drift between
+  two runs, `rerun_affected()` filters the original mask down to
+  the cases that referenced the impacted files and re-runs
+  `genproc()` on that subset only. The resulting `genproc_result`
+  is a small refresh, not a full re-run.
+* `diff_inputs()` now returns a new `$cases_affected` field: a
+  data.frame with columns `case_id`, `path`, `column`,
+  `change_type` listing every (case, input column) pair impacted
+  by the diff. Available both programmatically and as input to
+  `rerun_affected()`. The print method also shows a concise
+  summary ("Cases affected: N") and a hint towards
+  `rerun_affected()`.
+* `print.genproc_input_diff` now distinguishes small size
+  variations whose human-readable rounding is identical: when the
+  formatted size is the same on both sides, the byte delta is
+  shown explicitly (`size: 1.1 KB -> 1.1 KB (+6 B)`).
+
 ## UX improvements
+
+* Tracebacks captured by the logged layer are now substantially
+  shorter and easier to read. Internal dispatcher frames
+  (`execute_cases`, `do.call`, `FUN`), invocation context frames
+  (`source`, `eval`, `withVisible`), and PSOCK worker frames
+  (`workRSOCK`, `workLoop`, `workCommand`, `makeSOCKmaster`) are now
+  dropped from the head of the stack, so the first surviving frame
+  is always user code. User calls to `lapply()` or `do.call()` from
+  within their own function are preserved (the head-position filter
+  only consumes leading frames).
 
 * Composing `parallel = parallel_spec(...)` and
   `nonblocking = nonblocking_spec(...)` now works out of the box on

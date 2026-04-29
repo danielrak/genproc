@@ -51,6 +51,11 @@
 #'       snapshot but absent in `r1`'s.}
 #'     \item{added}{Character vector of paths present in `r1`'s
 #'       snapshot but absent in `r0`'s.}
+#'     \item{cases_affected}{A data.frame with columns `case_id`,
+#'       `path`, `column`, `change_type` (one of `"changed"`,
+#'       `"removed"`, `"added"`). One row per (case, input column)
+#'       impacted by the diff. Pass to [rerun_affected()] to re-run
+#'       only the impacted cases.}
 #'   }
 #'
 #' @examples
@@ -131,16 +136,89 @@ diff_inputs <- function(r0, r1) {
 
   unchanged <- shared[!changed_idx]
 
+  # --- Build cases_affected -----------------------------------------
+  # For each path that has changed/been removed/been added, list every
+  # case_id of r0 (changed/removed) or r1 (added) that referenced that
+  # path. This is the actionable handle: the user can pass the diff
+  # to `rerun_affected()` to re-run only the impacted cases.
+  cases_affected <- build_cases_affected(
+    refs0       = inp0$refs,
+    refs1       = inp1$refs,
+    changed_paths = changed$path,
+    removed     = removed,
+    added       = added
+  )
+
   structure(
     list(
-      method    = inp0$method,
-      changed   = changed,
-      unchanged = unchanged,
-      removed   = removed,
-      added     = added
+      method         = inp0$method,
+      changed        = changed,
+      unchanged      = unchanged,
+      removed        = removed,
+      added          = added,
+      cases_affected = cases_affected
     ),
     class = "genproc_input_diff"
   )
+}
+
+
+# Internal. Joins the `refs` tables of the two runs against the
+# changed / removed / added path lists to produce a tidy data.frame
+# of impacted case_ids. The resulting frame is sorted by case_id so
+# that consumers can deduplicate predictably.
+build_cases_affected <- function(refs0, refs1,
+                                 changed_paths, removed, added) {
+  parts <- list()
+  if (length(changed_paths) > 0L && nrow(refs0) > 0L) {
+    sub <- refs0[refs0$path %in% changed_paths, , drop = FALSE]
+    if (nrow(sub) > 0L) {
+      parts$changed <- data.frame(
+        case_id     = sub$case_id,
+        path        = sub$path,
+        column      = sub$column,
+        change_type = "changed",
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  if (length(removed) > 0L && nrow(refs0) > 0L) {
+    sub <- refs0[refs0$path %in% removed, , drop = FALSE]
+    if (nrow(sub) > 0L) {
+      parts$removed <- data.frame(
+        case_id     = sub$case_id,
+        path        = sub$path,
+        column      = sub$column,
+        change_type = "removed",
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  if (length(added) > 0L && nrow(refs1) > 0L) {
+    sub <- refs1[refs1$path %in% added, , drop = FALSE]
+    if (nrow(sub) > 0L) {
+      parts$added <- data.frame(
+        case_id     = sub$case_id,
+        path        = sub$path,
+        column      = sub$column,
+        change_type = "added",
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
+  if (length(parts) == 0L) {
+    return(data.frame(
+      case_id     = character(0),
+      path        = character(0),
+      column      = character(0),
+      change_type = character(0),
+      stringsAsFactors = FALSE
+    ))
+  }
+  out <- do.call(rbind, parts)
+  rownames(out) <- NULL
+  out[order(out$case_id, out$path), , drop = FALSE]
 }
 
 
@@ -166,14 +244,31 @@ print.genproc_input_diff <- function(x, ...) {
   cat("  Removed:   ", length(x$removed),   "\n", sep = "")
   cat("  Added:     ", length(x$added),     "\n", sep = "")
 
+  n_affected <- length(unique(x$cases_affected$case_id))
+  if (n_affected > 0L) {
+    cat("  Cases affected: ", n_affected, "\n", sep = "")
+  }
+
   if (nrow(x$changed) > 0L) {
     cat("\nChanged files:\n")
     for (i in seq_len(nrow(x$changed))) {
       r <- x$changed[i, , drop = FALSE]
       cat("  ", r$path, "\n", sep = "")
       if (!equal_with_na(r$size_before, r$size_after)) {
-        cat("      size:  ", format_size(r$size_before),
-            " -> ",         format_size(r$size_after), "\n", sep = "")
+        # When the rounded human-readable size is identical for
+        # before and after (small delta on a >1KB file), show the
+        # byte delta explicitly so the change is not invisible.
+        s_before <- format_size(r$size_before)
+        s_after  <- format_size(r$size_after)
+        suffix   <- ""
+        if (identical(s_before, s_after) &&
+            !is.na(r$size_before) && !is.na(r$size_after)) {
+          delta  <- r$size_after - r$size_before
+          sign   <- if (delta >= 0) "+" else "-"
+          suffix <- sprintf(" (%s%d B)", sign, abs(delta))
+        }
+        cat("      size:  ", s_before, " -> ", s_after, suffix,
+            "\n", sep = "")
       }
       if (!equal_with_na(r$mtime_before, r$mtime_after)) {
         cat("      mtime: ", format(r$mtime_before),
@@ -194,6 +289,20 @@ print.genproc_input_diff <- function(x, ...) {
     for (p in utils::head(x$added, 10L)) cat("  ", p, "\n", sep = "")
     if (length(x$added) > 10L)
       cat("  (+", length(x$added) - 10L, " more)\n", sep = "")
+  }
+
+  # Cases affected: actionable handle. Show up to 10 distinct case_ids,
+  # then summarise. The full data.frame is always available via
+  # `x$cases_affected` for programmatic use, and as input to
+  # `rerun_affected()`.
+  if (n_affected > 0L) {
+    case_ids <- unique(x$cases_affected$case_id)
+    cat("\nCases affected (use rerun_affected() to re-run):\n  ")
+    cat(paste(utils::head(case_ids, 10L), collapse = ", "))
+    if (length(case_ids) > 10L) {
+      cat(" (+", length(case_ids) - 10L, " more)", sep = "")
+    }
+    cat("\n")
   }
 
   invisible(x)

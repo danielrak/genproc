@@ -132,6 +132,40 @@ test_that("traceback is captured for failing cases", {
   expect_true(grepl("inner", result$log$traceback[1]))
 })
 
+test_that("traceback is free of genproc dispatcher / signal frames", {
+  # F3 phase 1: clean_traceback drops execute_cases, do.call, FUN,
+  # the anonymous lapply callback, and signal frames so the user only
+  # sees their own code path. Frames at the very top of the captured
+  # stack must not contain genproc-internal names.
+  validate_df <- function(data) {
+    if (!is.data.frame(data)) stop("Pas un data.frame")
+    data
+  }
+  user_fn <- function(x) {
+    validate_df(x)
+  }
+  result <- genproc(user_fn, data.frame(x = I(list(1L))))
+  tb <- result$log$traceback[1L]
+
+  expect_false(is.na(tb))
+
+  # No genproc dispatcher / wrapper frames should leak.
+  expect_false(grepl("execute_cases", tb))
+  expect_false(grepl("\\bFUN\\(", tb))
+  expect_false(grepl("\\bdo\\.call\\(", tb))
+  expect_false(grepl("tryCatch", tb))
+  expect_false(grepl("withCallingHandlers", tb))
+  expect_false(grepl("\\.handleSimpleError", tb))
+
+  # User frames are present.
+  expect_true(grepl("validate_df", tb))
+  expect_true(grepl("stop", tb))
+
+  # The first surviving frame is one of the user frames, not internals.
+  first_line <- strsplit(tb, "\n", fixed = TRUE)[[1L]][1L]
+  expect_false(grepl("execute_cases|FUN\\(|do\\.call\\(", first_line))
+})
+
 test_that("successful cases have NA error_message and traceback", {
   result <- genproc(function(x) x, data.frame(x = 1))
 

@@ -143,3 +143,89 @@ test_that("print.genproc_input_diff shows changed file detail", {
   expect_match(out, "size:")
   expect_match(out, "mtime:")
 })
+
+
+# === F8: cases_affected ======================================================
+
+test_that("cases_affected is empty when nothing changed", {
+  runs <- make_two_runs()
+  d <- diff_inputs(runs$r0, runs$r1)
+
+  expect_s3_class(d$cases_affected, "data.frame")
+  expect_equal(nrow(d$cases_affected), 0)
+  expect_equal(names(d$cases_affected),
+               c("case_id", "path", "column", "change_type"))
+})
+
+test_that("cases_affected lists case_ids for changed files", {
+  runs <- make_two_runs(mutation = function(paths) {
+    Sys.sleep(1.1)
+    # Mutate paths[1] only -> case_0001 should be affected.
+    writeLines("x,y\n1,2\n3,4\n5,6\n", paths[1])
+  })
+  d <- diff_inputs(runs$r0, runs$r1)
+
+  expect_equal(nrow(d$changed), 1)
+  expect_equal(nrow(d$cases_affected), 1)
+  expect_equal(d$cases_affected$case_id, "case_0001")
+  expect_equal(d$cases_affected$change_type, "changed")
+  expect_equal(d$cases_affected$column, "csv_in")
+})
+
+test_that("cases_affected lists ALL cases referencing a changed shared file", {
+  # A single file referenced by 3 cases should produce 3 rows in
+  # cases_affected when that file changes.
+  d_path <- tempfile("diff_shared_"); dir.create(d_path)
+  shared_path <- file.path(d_path, "shared.csv")
+  writeLines("x\n1\n", shared_path)
+
+  mask <- data.frame(
+    csv_in = rep(shared_path, 3L),
+    extra  = c("a", "b", "c"),
+    stringsAsFactors = FALSE
+  )
+  f <- function(csv_in, extra) nrow(read.csv(csv_in))
+
+  r0 <- genproc(f, mask)
+  Sys.sleep(1.1)
+  writeLines("x\n1\n2\n3\n", shared_path)
+  r1 <- genproc(f, mask)
+
+  d <- diff_inputs(r0, r1)
+  expect_equal(nrow(d$changed), 1)
+  expect_equal(sort(unique(d$cases_affected$case_id)),
+               c("case_0001", "case_0002", "case_0003"))
+})
+
+test_that("cases_affected reports change_type for added/removed paths", {
+  d_path <- tempfile("diff_addrem_"); dir.create(d_path)
+  p1 <- file.path(d_path, "a.csv")
+  p2 <- file.path(d_path, "b.csv")
+  writeLines("x\n1\n", p1)
+  writeLines("x\n2\n", p2)
+
+  f <- function(csv_in) nrow(read.csv(csv_in))
+
+  r0 <- genproc(f, data.frame(csv_in = p1, stringsAsFactors = FALSE))
+  r1 <- genproc(f, data.frame(csv_in = c(p1, p2),
+                              stringsAsFactors = FALSE))
+
+  d <- diff_inputs(r0, r1)
+  # The "added" file appears in r1's case_0002.
+  added_rows <- d$cases_affected[d$cases_affected$change_type == "added",
+                                  , drop = FALSE]
+  expect_equal(nrow(added_rows), 1)
+  expect_equal(added_rows$case_id, "case_0002")
+})
+
+test_that("print method shows cases-affected summary when non-empty", {
+  runs <- make_two_runs(mutation = function(paths) {
+    Sys.sleep(1.1)
+    writeLines("x,y\n1,2\n3,4\n5,6\n", paths[1])
+  })
+  d <- diff_inputs(runs$r0, runs$r1)
+  out <- paste(capture.output(print(d)), collapse = "\n")
+  expect_match(out, "Cases affected")
+  expect_match(out, "case_0001")
+  expect_match(out, "rerun_affected")
+})

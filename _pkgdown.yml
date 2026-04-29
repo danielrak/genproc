@@ -25,9 +25,11 @@ reference:
 
 - title: Reproducibility tooling
   desc: >
-    Compare two runs to detect silent drift of upstream input files.
+    Compare two runs to detect silent drift of upstream input files,
+    and re-run only the cases impacted by the drift.
   contents:
   - diff_inputs
+  - rerun_affected
 
 - title: Building blocks
   desc: >

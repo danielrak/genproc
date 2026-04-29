@@ -3,8 +3,33 @@
 # Filters and truncates a raw call stack captured by sys.calls() to
 # produce a human-readable traceback. Removes genproc's internal
 # machinery (tryCatch, withCallingHandlers, the injected wrapper body,
-# R's own error-signalling frames) so the user sees only their own
-# code and the functions it called.
+# R's own error-signalling frames, dispatcher / worker frames) so the
+# user sees only their own code and the functions it called.
+#
+# === Filtering layers ===
+#
+# Three independent filters are applied to the captured `sys.calls()`:
+#
+# 1. **tryCatch/withCallingHandlers block (position-based)**. genproc
+#    always nests user code inside `tryCatch(withCallingHandlers({...}))`,
+#    so we locate the contiguous block of frames whose head is in that
+#    family and drop it wholesale.
+# 2. **R error-signalling frames (symbol-based)**. simpleError,
+#    .handleSimpleError, etc. — R's machinery for raising the
+#    condition, never the cause itself.
+# 3. **Anonymous-function-call frames (structural)**. genproc's
+#    injected error handler is `(function(.__e__){...})(err)`. Its
+#    head is a call object, not a symbol; we use that structural
+#    difference to recognize and drop it.
+# 4. **Leading dispatcher/worker frames (head-position-based)**. The
+#    sequential dispatcher (`execute_cases`, `do.call`, `FUN`, the
+#    `lapply` callback) and the PSOCK worker (`workRSOCK`, `workLoop`,
+#    `workCommand`, `makeSOCKmaster`) and the future runner
+#    (`future_lapply`, `future_xapply`) are always at the top of the
+#    captured stack. We drop them by consuming frames *from the head*
+#    while they belong to a known dispatcher/worker name. This is
+#    safe even if the user calls `lapply()` or `do.call()` themselves
+#    inside their function — those frames are not at the head.
 #
 # === Why match on call HEAD, not deparse text? ===
 #
@@ -19,8 +44,7 @@
 # directly. For a normal call like `my_func()`, the head is the symbol
 # `my_func`. For anonymous function invocations (e.g. the injected
 # error handler `(function(.__e__){...})(err)`), the head is itself
-# a call object, not a symbol — we use that structural difference to
-# recognize and drop them without ever touching deparsed text.
+# a call object, not a symbol.
 
 
 #' Clean a raw traceback from sys.calls()
@@ -51,6 +75,14 @@
 #' 3. **Anonymous-function-call drop.** Frames whose head is not a
 #'    symbol (e.g. `(function(.__e__){...})(err)`) are dropped. In
 #'    practice these are always genproc's injected handlers.
+#' 4. **Leading dispatcher/worker drop.** Frames at the top of the
+#'    stack whose head is a known internal dispatcher
+#'    (`execute_cases`, `do.call`, `FUN`), future runner
+#'    (`future_lapply`, `future_xapply`), or PSOCK worker
+#'    (`workRSOCK`, `workLoop`, `workCommand`, `makeSOCKmaster`) are
+#'    consumed from the head, until a non-dispatcher frame is reached.
+#'    This is safe against user code that calls `lapply()` or
+#'    `do.call()` itself — those frames are never at the very top.
 #'
 #' ## Formatting
 #'
@@ -97,6 +129,39 @@ clean_traceback <- function(calls, max_width = 120L) {
 
   keep <- !(is_signal | is_anon_fn_call)
   calls <- calls[keep]
+
+  if (length(calls) == 0L) return(NA_character_)
+
+  # --- Drop leading dispatcher / worker frames ---
+  # Internal frames that sit at the very top of the captured stack
+  # before user code starts. We consume them from the head only.
+  # Exception: the *real* top-of-stack `execute_cases` call is
+  # always present (sequential path). PSOCK worker frames are present
+  # in the parallel path. future runner frames may appear in nested
+  # configurations.
+  dispatcher_fns <- c(
+    # genproc entry point and dispatcher
+    "genproc", "execute_cases",
+    # The lapply() call that genproc uses internally to dispatch
+    # cases sequentially, plus its callback machinery. These are
+    # safe to drop *from the head* even though the user might call
+    # lapply()/do.call() inside their own function: such user calls
+    # are mid-stack (they come after the user fn frame), not at the
+    # head, so the head-position filter never reaches them.
+    "lapply", "do.call", "FUN",
+    # future / future.apply runners
+    "future_lapply", "future_xapply",
+    # PSOCK worker
+    "workRSOCK", "workLoop", "workCommand", "makeSOCKmaster",
+    # invocation context (when called via source()/eval())
+    "source", "withVisible", "eval"
+  )
+  while (length(calls) > 0L) {
+    head1 <- calls[[1L]][[1L]]
+    if (!is.symbol(head1)) break
+    if (!as.character(head1) %in% dispatcher_fns) break
+    calls <- calls[-1L]
+  }
 
   if (length(calls) == 0L) return(NA_character_)
 
