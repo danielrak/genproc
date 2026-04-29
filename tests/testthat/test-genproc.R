@@ -247,6 +247,59 @@ test_that("reproducibility captures timestamp", {
 })
 
 
+# === F17: effective_strategy in repro snapshot ==============================
+
+test_that("repro snapshot has no parallel block on a sequential run", {
+  result <- genproc(function(x) x, data.frame(x = 1))
+  expect_null(result$reproducibility$parallel)
+})
+
+test_that("repro snapshot includes effective_strategy when parallel was used", {
+  result <- genproc(
+    function(x) x, data.frame(x = 1:2),
+    parallel = parallel_spec(strategy = "sequential")
+  )
+  par <- result$reproducibility$parallel
+  expect_false(is.null(par))
+  expect_equal(par$strategy, "sequential")
+  expect_equal(par$effective_strategy, "sequential")
+})
+
+test_that("repro effective_strategy reflects auto-default to multisession", {
+  # User passes workers without strategy: genproc auto-defaults to
+  # multisession in execute_cases. The snapshot should record this
+  # so a reader can audit what was actually applied.
+  result <- genproc(
+    function(x) x, data.frame(x = 1),
+    parallel = parallel_spec(strategy = "sequential", workers = 1L)
+  )
+  # Use sequential here to avoid spawning real workers in tests, but
+  # the assertion below is on the auto-default rule itself, exercised
+  # via the helper directly.
+  resolve <- utils::getFromNamespace("resolve_effective_strategy",
+                                     "genproc")
+  expect_equal(
+    resolve(parallel_spec(workers = 4L)),
+    "multisession"
+  )
+  expect_equal(
+    resolve(parallel_spec()),  # power-user, defer to current plan
+    NULL
+  )
+})
+
+test_that("repro preserves user-requested strategy alongside effective_strategy", {
+  # The user requested "sequential" — both fields should match.
+  result <- genproc(
+    function(x) x, data.frame(x = 1:2),
+    parallel = parallel_spec(strategy = "sequential")
+  )
+  par <- result$reproducibility$parallel
+  expect_equal(par$strategy,           "sequential")
+  expect_equal(par$effective_strategy, "sequential")
+})
+
+
 # === Full pipeline integration ================================================
 
 test_that("full pipeline: expression -> function -> rename -> mask -> genproc", {

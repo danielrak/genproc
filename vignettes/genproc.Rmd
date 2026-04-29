@@ -114,7 +114,13 @@ str(result$reproducibility, max.level = 1)
   the value).
 - `parallel`: `NULL` for a sequential run, or a plain list mirroring
   the `parallel_spec()` used. Dropped class to make the snapshot
-  portable to serialization formats.
+  portable to serialization formats. The list also carries
+  `effective_strategy`: the strategy actually applied by
+  `genproc()`, which differs from `strategy` when the user passed
+  `workers` without an explicit `strategy` and `genproc()`
+  auto-defaulted to `"multisession"`. Both fields are recorded so
+  the snapshot is self-explanatory: `strategy` is what the user
+  asked for, `effective_strategy` is what was applied.
 - `nonblocking`: same pattern, for `nonblocking_spec()`.
 - `inputs`: a fingerprint of every file the mask refers to, or
   `NULL` if input tracking was disabled (`track_inputs = FALSE`).

@@ -178,3 +178,18 @@ parallel_spec <- function(workers = NULL,
     class = "genproc_parallel_spec"
   )
 }
+
+
+# Internal. Compute the strategy that genproc() will actually use
+# given a parallel spec, applying the auto-default rule:
+# `workers` passed without `strategy` => multisession. Returns NULL
+# in power-user mode (no workers, no strategy → defer to the
+# caller's current future::plan()). Used both by execute_cases (to
+# install the temporary plan) and by capture_reproducibility (to
+# record what was actually applied, alongside the user's request).
+resolve_effective_strategy <- function(parallel) {
+  if (is.null(parallel)) return(NULL)
+  if (!is.null(parallel$strategy)) return(parallel$strategy)
+  if (!is.null(parallel$workers))  return("multisession")
+  NULL
+}

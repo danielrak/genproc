@@ -176,7 +176,12 @@ format_execution_mode <- function(x) {
     "sequential"
   } else {
     workers <- par_spec$workers
-    strategy <- par_spec$strategy
+    # Prefer the effective strategy (what was actually applied)
+    # over the requested one (which may be NULL when the user
+    # passed `workers` without an explicit `strategy` and
+    # genproc auto-defaulted to multisession).
+    strategy <- par_spec$effective_strategy
+    if (is.null(strategy) || !nzchar(strategy)) strategy <- par_spec$strategy
     parts <- character()
     if (!is.null(strategy) && nzchar(strategy)) parts <- c(parts, strategy)
     parts <- c(parts, "parallel")

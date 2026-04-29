@@ -51,7 +51,12 @@
 #'     \item{packages}{Named character vector: package name -> version.}
 #'     \item{mask_snapshot}{The exact mask data.frame used.}
 #'     \item{parallel}{`NULL` for a sequential run, or a list with the
-#'       parallel spec's fields for a parallel run.}
+#'       parallel spec's fields for a parallel run. The list also
+#'       carries `effective_strategy`, which records the strategy
+#'       actually applied by `genproc()` (this differs from
+#'       `strategy` when the user passed `workers` without an
+#'       explicit `strategy` and `genproc()` auto-defaulted to
+#'       `"multisession"`).}
 #'     \item{nonblocking}{`NULL` for a synchronous run, or a list with
 #'       the non-blocking spec's fields for a non-blocking run.}
 #'     \item{inputs}{`NULL` when input tracking is disabled, otherwise
@@ -93,15 +98,21 @@ capture_reproducibility <- function(mask, parallel = NULL,
   # Normalize parallel spec -> plain list (or NULL).
   # We drop the class so the snapshot is portable to e.g. JSON/YAML
   # export in the future without pulling in the class definition.
+  # `effective_strategy` records what genproc() actually applied,
+  # which differs from `strategy` when the user passed `workers`
+  # without an explicit `strategy` (auto-default to "multisession").
+  # Recording both preserves transparency: `strategy` is what the
+  # user requested, `effective_strategy` is what was applied.
   parallel_snapshot <- if (is.null(parallel)) {
     NULL
   } else {
     list(
-      strategy   = parallel$strategy,
-      workers    = parallel$workers,
-      chunk_size = parallel$chunk_size,
-      seed       = parallel$seed,
-      packages   = parallel$packages
+      strategy           = parallel$strategy,
+      effective_strategy = resolve_effective_strategy(parallel),
+      workers            = parallel$workers,
+      chunk_size         = parallel$chunk_size,
+      seed               = parallel$seed,
+      packages           = parallel$packages
     )
   }
 

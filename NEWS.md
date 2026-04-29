@@ -36,6 +36,17 @@
 
 ## UX improvements
 
+* `result$reproducibility$parallel` now carries an
+  `effective_strategy` field alongside the user-requested
+  `strategy`. The two differ when the user passed `workers`
+  without an explicit `strategy`, in which case `genproc()`
+  auto-defaults to `"multisession"`; the snapshot now records
+  both, preserving the audit trail of what was requested vs
+  what was applied. The `Mode` line of `print(result)` now
+  shows the effective strategy by default, so a sequential vs
+  parallel multisession run is no longer ambiguous in the
+  printed summary.
+
 * `status()` now distinguishes `"done"` (the wrapper future
   resolved successfully) from `"error"` (the wrapper crashed),
   even before [await()] is called. Previously `status()` returned

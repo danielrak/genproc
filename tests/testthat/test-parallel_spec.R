@@ -125,3 +125,36 @@ test_that("globals rejects numeric or list", {
   expect_error(parallel_spec(globals = 42),       "logical or a character")
   expect_error(parallel_spec(globals = list(1)),  "logical or a character")
 })
+
+
+# === resolve_effective_strategy() (internal, F17) ============================
+
+test_that("resolve_effective_strategy returns NULL when parallel is NULL", {
+  resolve <- utils::getFromNamespace("resolve_effective_strategy",
+                                     "genproc")
+  expect_null(resolve(NULL))
+})
+
+test_that("resolve_effective_strategy returns the user's strategy when set", {
+  resolve <- utils::getFromNamespace("resolve_effective_strategy",
+                                     "genproc")
+  spec <- parallel_spec(strategy = "sequential")
+  expect_equal(resolve(spec), "sequential")
+
+  spec <- parallel_spec(strategy = "multisession", workers = 4L)
+  expect_equal(resolve(spec), "multisession")
+})
+
+test_that("resolve_effective_strategy auto-defaults to multisession when workers given without strategy", {
+  resolve <- utils::getFromNamespace("resolve_effective_strategy",
+                                     "genproc")
+  spec <- parallel_spec(workers = 4L)
+  expect_equal(resolve(spec), "multisession")
+})
+
+test_that("resolve_effective_strategy returns NULL in power-user mode (no workers, no strategy)", {
+  resolve <- utils::getFromNamespace("resolve_effective_strategy",
+                                     "genproc")
+  spec <- parallel_spec()
+  expect_null(resolve(spec))
+})
