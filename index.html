@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">genproc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,7 +58,7 @@
 <li>
 <strong>Logged</strong> — each case produces a structured log row with the real traceback (captured via <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">withCallingHandlers()</a></code>) and per-case timing.</li>
 <li>
-<strong>Reproducibility</strong> — each run records the R version, loaded package versions, execution environment, the exact iteration mask, and the spec of any optional layer used, so that two runs can be compared and any parameter drift is auditable.</li>
+<strong>Reproducibility</strong> — each run records the R version, loaded package versions, execution environment, the exact iteration mask, and the spec of any optional layer used, so that two runs can be compared and any change in execution parameters is auditable.</li>
 </ul>
 <p>Two optional layers can be composed with the defaults, at the caller’s choice:</p>
 <ul>
@@ -108,7 +108,7 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span><span class="op">)</span></span></code></pre></div>
-<p>Every run returns a <code>genproc_result</code>. The log contains one row per case, with stable <code>case_id</code>, the parameter values, <code>success</code>, <code>error_message</code>, <code>traceback</code>, and <code>duration_secs</code>:</p>
+<p>Every run returns a <code>genproc_result</code>. The <code>log</code> data.frame holds one row per case, with <code>case_id</code>, the mask parameter values (<code>src_dir</code>, <code>src_file</code>, <code>dst_dir</code>, <code>dst_file</code> here), then <code>success</code>, <code>error_message</code>, <code>traceback</code>, and <code>duration_secs</code>. Below we display a subset of those columns for readability — <code>error_message</code> and <code>traceback</code> are <code>NA</code> on this happy path:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span><span class="op">$</span><span class="va">log</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"case_id"</span>, <span class="st">"src_file"</span>, <span class="st">"dst_file"</span>,</span>
 <span>               <span class="st">"success"</span>, <span class="st">"duration_secs"</span><span class="op">)</span><span class="op">]</span></span>
@@ -116,19 +116,19 @@
 <span><span class="co">#&gt; 1 case_0001    a.csv    a.rds    TRUE             0</span></span>
 <span><span class="co">#&gt; 2 case_0002    b.csv    b.rds    TRUE             0</span></span>
 <span><span class="co">#&gt; 3 case_0003    c.csv    c.rds    TRUE             0</span></span></code></pre></div>
-<p>If a case fails, the run continues — the error is captured, not thrown. Here we delete one source file on purpose before a second run:</p>
+<p>If a case fails, the run continues — the error is captured, not thrown. Below we point one row of the mask to a file that does not exist; <code>b.csv</code> itself is left untouched on disk so subsequent sections of this README can still reference it:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.remove</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">src_dir</span>, <span class="st">"b.csv"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] TRUE</span></span>
+<code class="sourceCode R"><span><span class="va">mask_with_missing</span> <span class="op">&lt;-</span> <span class="va">mask</span></span>
+<span><span class="va">mask_with_missing</span><span class="op">$</span><span class="va">src_file</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"does_not_exist.csv"</span></span>
 <span></span>
-<span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in file(file, "rt"): impossible d'ouvrir le fichier</span></span>
-<span><span class="co">#&gt; 'C:\Users\rheri\AppData\Local\Temp\RtmpegrrE4/src/b.csv' : No such file or</span></span>
-<span><span class="co">#&gt; directory</span></span>
-<span><span class="va">result2</span><span class="op">$</span><span class="va">log</span><span class="op">[</span><span class="va">result2</span><span class="op">$</span><span class="va">log</span><span class="op">$</span><span class="va">success</span> <span class="op">==</span> <span class="cn">FALSE</span>,</span>
+<span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask_with_missing</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in file(file, "rt"): cannot open file</span></span>
+<span><span class="co">#&gt; 'C:\Users\rheri\AppData\Local\Temp\RtmpsrBmc8/src/does_not_exist.csv': No such</span></span>
+<span><span class="co">#&gt; file or directory</span></span>
+<span><span class="va">result2</span><span class="op">$</span><span class="va">log</span><span class="op">[</span><span class="op">!</span><span class="va">result2</span><span class="op">$</span><span class="va">log</span><span class="op">$</span><span class="va">success</span>,</span>
 <span>            <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"case_id"</span>, <span class="st">"src_file"</span>, <span class="st">"error_message"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;     case_id src_file                    error_message</span></span>
-<span><span class="co">#&gt; 2 case_0002    b.csv impossible d'ouvrir la connexion</span></span>
+<span><span class="co">#&gt;     case_id           src_file              error_message</span></span>
+<span><span class="co">#&gt; 2 case_0002 does_not_exist.csv cannot open the connection</span></span>
 <span><span class="va">result2</span><span class="op">$</span><span class="va">n_success</span></span>
 <span><span class="co">#&gt; [1] 2</span></span>
 <span><span class="va">result2</span><span class="op">$</span><span class="va">n_error</span></span>
@@ -142,13 +142,13 @@
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">reproducibility</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 11</span></span>
-<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-28 19:37:59"</span></span>
+<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-29 12:26:01"</span></span>
 <span><span class="co">#&gt;  $ r_version    : chr "R version 4.5.1 (2025-06-13 ucrt)"</span></span>
 <span><span class="co">#&gt;  $ platform     : chr "x86_64-w64-mingw32"</span></span>
 <span><span class="co">#&gt;  $ os           : chr "Windows 10 x64"</span></span>
 <span><span class="co">#&gt;  $ locale       : chr "LC_COLLATE=French_France.utf8;LC_CTYPE=French_France.utf8;LC_MONETARY=French_France.utf8;LC_NUMERIC=C;LC_TIME=F"| __truncated__</span></span>
 <span><span class="co">#&gt;  $ timezone     : chr "Europe/Paris"</span></span>
-<span><span class="co">#&gt;  $ packages     : Named chr [1:22] "0.0.0.9000" "4.5.1" "1.2.0" "3.6.5" ...</span></span>
+<span><span class="co">#&gt;  $ packages     : Named chr [1:22] "0.1.0" "4.5.1" "1.2.0" "3.6.5" ...</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "names")= chr [1:22] "genproc" "compiler" "fastmap" "cli" ...</span></span>
 <span><span class="co">#&gt;  $ mask_snapshot:'data.frame':   3 obs. of  4 variables:</span></span>
 <span><span class="co">#&gt;  $ parallel     : NULL</span></span>
@@ -168,27 +168,32 @@
 <span><span class="va">do_one</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">csv_in</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">csv_in</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">run0</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">do_one</span>, <span class="va">mask_paths</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in file(file, "rt"): impossible d'ouvrir le fichier</span></span>
-<span><span class="co">#&gt; 'C:\Users\rheri\AppData\Local\Temp\RtmpegrrE4/src/b.csv' : No such file or</span></span>
-<span><span class="co">#&gt; directory</span></span>
 <span><span class="va">run0</span><span class="op">$</span><span class="va">reproducibility</span><span class="op">$</span><span class="va">inputs</span><span class="op">$</span><span class="va">files</span></span>
-<span><span class="co">#&gt; [1] path  size  mtime</span></span>
-<span><span class="co">#&gt; &lt;0 lignes&gt; (ou 'row.names' de longueur nulle)</span></span></code></pre></div>
+<span><span class="co">#&gt;                                                     path size</span></span>
+<span><span class="co">#&gt; 1 C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/a.csv  221</span></span>
+<span><span class="co">#&gt; 2 C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/b.csv  303</span></span>
+<span><span class="co">#&gt; 3 C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/c.csv  161</span></span>
+<span><span class="co">#&gt;                 mtime</span></span>
+<span><span class="co">#&gt; 1 2026-04-29 12:26:01</span></span>
+<span><span class="co">#&gt; 2 2026-04-29 12:26:01</span></span>
+<span><span class="co">#&gt; 3 2026-04-29 12:26:01</span></span></code></pre></div>
 <p><code><a href="reference/diff_inputs.html">diff_inputs()</a></code> compares two runs and tells you which referenced files have changed since the first one:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Rewrite a.csv with strictly more content (size changes)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">iris</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">src_dir</span>, <span class="st">"a.csv"</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">run1</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">do_one</span>, <span class="va">mask_paths</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in file(file, "rt"): impossible d'ouvrir le fichier</span></span>
-<span><span class="co">#&gt; 'C:\Users\rheri\AppData\Local\Temp\RtmpegrrE4/src/b.csv' : No such file or</span></span>
-<span><span class="co">#&gt; directory</span></span>
 <span><span class="fu"><a href="reference/diff_inputs.html">diff_inputs</a></span><span class="op">(</span><span class="va">run0</span>, <span class="va">run1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; genproc input diff (method: stat)</span></span>
-<span><span class="co">#&gt;   Changed:   0</span></span>
-<span><span class="co">#&gt;   Unchanged: 0</span></span>
+<span><span class="co">#&gt;   Changed:   1</span></span>
+<span><span class="co">#&gt;   Unchanged: 2</span></span>
 <span><span class="co">#&gt;   Removed:   0</span></span>
-<span><span class="co">#&gt;   Added:     0</span></span></code></pre></div>
+<span><span class="co">#&gt;   Added:     0</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Changed files:</span></span>
+<span><span class="co">#&gt;   C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/a.csv</span></span>
+<span><span class="co">#&gt;       size:  221 B -&gt; 4.1 KB</span></span>
+<span><span class="co">#&gt;       mtime: 2026-04-29 12:26:01 -&gt; 2026-04-29 12:26:01</span></span></code></pre></div>
 <p>The default method is <code>"stat"</code> (size + mtime). It detects every legitimate modification at near-zero cost; a content-hash variant is on the roadmap for stronger guarantees on adversarial workloads.</p>
 </div>
 <div class="section level2">

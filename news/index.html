@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">genproc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,9 +34,10 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.0.0.9000" id="genproc-0009000-development">genproc 0.0.0.9000 (development)<a class="anchor" aria-label="anchor" href="#genproc-0009000-development"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.1.0" id="genproc-010">genproc 0.1.0<a class="anchor" aria-label="anchor" href="#genproc-010"></a></h2>
+<p>First public release. The package consolidates the four execution layers (logged, reproducibility, parallel, non-blocking) and the building blocks (<code><a href="../reference/from_example_to_function.html">from_example_to_function()</a></code>, <code><a href="../reference/from_function_to_mask.html">from_function_to_mask()</a></code>, <code><a href="../reference/rename_function_params.html">rename_function_params()</a></code>, <code><a href="../reference/add_trycatch_logrow.html">add_trycatch_logrow()</a></code>) under a stable API contract. The <code>genproc_result</code> S3 class fields are guaranteed forward-compatible across the 0.x series.</p>
 <div class="section level3">
-<h3 id="execution-layers-0-0-0-9000">Execution layers<a class="anchor" aria-label="anchor" href="#execution-layers-0-0-0-9000"></a></h3>
+<h3 id="execution-layers-0-1-0">Execution layers<a class="anchor" aria-label="anchor" href="#execution-layers-0-1-0"></a></h3>
 <ul><li>New <code><a href="../reference/genproc.html">genproc()</a></code> runs a function over an iteration mask, with two mandatory layers always active:
 <ul><li>
 <strong>Logged</strong> — structured log with real traceback (captured via <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">withCallingHandlers()</a></code>) and per-case timing.</li>
@@ -49,14 +50,14 @@
 <li>New <code>diff_inputs(r0, r1)</code> compares the input fingerprints of two runs and reports changed / unchanged / added / removed files, with a human-readable print method.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="result-object-0-0-0-9000">Result object<a class="anchor" aria-label="anchor" href="#result-object-0-0-0-9000"></a></h3>
+<h3 id="result-object-0-1-0">Result object<a class="anchor" aria-label="anchor" href="#result-object-0-1-0"></a></h3>
 <ul><li>New S3 class <code>genproc_result</code> with stable fields: <code>log</code>, <code>reproducibility</code>, <code>n_success</code>, <code>n_error</code>, <code>duration_total_secs</code>, <code>status</code>.</li>
 <li>Per-case errors do not stop the run; they are captured in the <code>log</code> and surfaced in <code>n_error</code>.</li>
 <li>
 <code>case_id</code>s are index-based (<code>case_0001</code>, …) for now; a content-based variant is planned.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="building-blocks-0-0-0-9000">Building blocks<a class="anchor" aria-label="anchor" href="#building-blocks-0-0-0-9000"></a></h3>
+<h3 id="building-blocks-0-1-0">Building blocks<a class="anchor" aria-label="anchor" href="#building-blocks-0-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/from_example_to_function.html">from_example_to_function()</a></code>: transform an example expression into a parameterized function (modular AST rewrite engine, no rlang dependency).</li>
 <li>

@@ -13,7 +13,7 @@ production-grade procedures without restructuring the user's code."></head><body
 
     <a class="navbar-brand me-2" href="../index.html">genproc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,16 +50,27 @@ production-grade procedures without restructuring the user's code.</p>
 
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Two layers are always active (they cannot be disabled):</p><ul><li><p><em>Logged</em>: each case produces a structured log row with the real
-traceback (captured through <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">withCallingHandlers()</a></code>) and timing.</p></li>
+    <p>Two layers are always active and cannot be disabled:</p><ul><li><p><em>Logged</em>: each case produces a structured log row with the real
+traceback (captured via <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">withCallingHandlers()</a></code>) and per-case
+timing.</p></li>
 <li><p><em>Reproducibility</em>: each run records the R version, loaded package
-versions, execution environment, the exact mask used, and hashes of
-the file inputs referenced by the mask, so that silent
-non-reproducibility between runs can be flagged to the user.</p></li>
-</ul><p>Further layers are planned (parallel, non-blocking, monitored, error
-replay). They will be composable with the default layers and opt-in.</p>
-<p>This package has no Shiny dependency and is intended to be reusable
-from a future companion Shiny package.</p>
+versions, execution environment, the exact mask used, and a
+stat-based fingerprint (size + modification time) of every input
+file referenced by the mask. Silent drift of an upstream file
+between two runs can then be detected via <code><a href="diff_inputs.html">diff_inputs()</a></code>.</p></li>
+</ul><p>Two optional, composable layers can be enabled per call:</p><ul><li><p><em>Parallel</em>: dispatch cases to workers via the
+<a href="https://future.futureverse.org/reference/future.html" class="external-link">future</a> ecosystem and
+<code><a href="https://future.apply.futureverse.org/reference/future_lapply.html" class="external-link">future.apply::future_lapply()</a></code>. Configured through
+<code><a href="parallel_spec.html">parallel_spec()</a></code>.</p></li>
+<li><p><em>Non-blocking</em>: return a <code>genproc_result</code> skeleton immediately
+while the run continues in a background future. Poll with
+<code><a href="status.html">status()</a></code>, block with <code><a href="await.html">await()</a></code>. Configured through
+<code><a href="nonblocking_spec.html">nonblocking_spec()</a></code>.</p></li>
+</ul><p>Further layers are on the roadmap: monitored progress, error replay,
+content-hash input fingerprinting, content-based case identifiers.
+They will be composable with the default layers and opt-in.</p>
+<p>This package has no Shiny dependency and is designed to be
+consumable by a future companion Shiny package.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
