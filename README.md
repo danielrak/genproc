@@ -91,7 +91,7 @@ result
 #> genproc result
 #>   Status : done 
 #>   Cases  : 3 ( 3 ok, 0 error )
-#>   Duration: 0.04 secs
+#>   Duration: 0.06 secs
 ```
 
 The `log` data.frame holds one row per case, with `case_id`, the mask
@@ -120,7 +120,7 @@ mask_with_missing$src_file[2] <- "does_not_exist.csv"
 
 result2 <- genproc(convert, mask_with_missing)
 #> Warning in file(file, "rt"): cannot open file
-#> 'C:\Users\rheri\AppData\Local\Temp\RtmpItQsr6/src/does_not_exist.csv': No such
+#> 'C:\Users\rheri\AppData\Local\Temp\RtmpS2TaF4/src/does_not_exist.csv': No such
 #> file or directory
 result2$log[!result2$log$success,
             c("case_id", "src_file", "error_message")]
@@ -147,7 +147,7 @@ sync:
 ``` r
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 13:39:58"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 17:55:37"
 #>  $ r_version    : chr "R version 4.5.1 (2025-06-13 ucrt)"
 #>  $ platform     : chr "x86_64-w64-mingw32"
 #>  $ os           : chr "Windows 10 x64"
@@ -192,13 +192,13 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                                     path size
-#> 1 C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/a.csv  221
-#> 2 C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/b.csv  303
-#> 3 C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/c.csv  161
+#> 1 C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/a.csv  221
+#> 2 C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/b.csv  303
+#> 3 C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/c.csv  161
 #>                 mtime
-#> 1 2026-04-29 13:39:58
-#> 2 2026-04-29 13:39:58
-#> 3 2026-04-29 13:39:58
+#> 1 2026-04-29 17:55:37
+#> 2 2026-04-29 17:55:37
+#> 3 2026-04-29 17:55:37
 ```
 
 `diff_inputs()` compares two runs and tells you which referenced files
@@ -217,9 +217,9 @@ diff_inputs(run0, run1)
 #>   Added:     0
 #> 
 #> Changed files:
-#>   C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/a.csv
+#>   C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/a.csv
 #>       size:  221 B -> 4.1 KB
-#>       mtime: 2026-04-29 13:39:58 -> 2026-04-29 13:39:58
+#>       mtime: 2026-04-29 17:55:37 -> 2026-04-29 17:55:37
 ```
 
 The default method is `"stat"` (size + mtime). It detects every
