@@ -54,12 +54,25 @@
 #'   }
 #'
 #' @examples
-#' \dontrun{
-#'   r0 <- genproc(my_fn, my_mask)
-#'   # ... edit one of the input CSVs ...
-#'   r1 <- genproc(my_fn, my_mask)
-#'   diff_inputs(r0, r1)
-#' }
+#' # Two runs of the same procedure, with one input file rewritten
+#' # in between. `diff_inputs()` reports the drift.
+#' src <- file.path(tempdir(), "diff-inputs-demo")
+#' dir.create(src, showWarnings = FALSE, recursive = TRUE)
+#' write.csv(head(iris), file.path(src, "a.csv"), row.names = FALSE)
+#'
+#' mask <- data.frame(
+#'   path = file.path(src, "a.csv"),
+#'   stringsAsFactors = FALSE
+#' )
+#' read_one <- function(path) nrow(read.csv(path))
+#'
+#' r0 <- genproc(read_one, mask)
+#'
+#' # Rewrite the file with strictly more rows: size changes.
+#' write.csv(iris, file.path(src, "a.csv"), row.names = FALSE)
+#'
+#' r1 <- genproc(read_one, mask)
+#' diff_inputs(r0, r1)
 #'
 #' @export
 diff_inputs <- function(r0, r1) {
@@ -142,6 +155,9 @@ equal_with_na <- function(a, b) {
 }
 
 
+#' @rdname diff_inputs
+#' @param x A `genproc_input_diff` object.
+#' @param ... Ignored (present for S3 method consistency).
 #' @export
 print.genproc_input_diff <- function(x, ...) {
   cat("genproc input diff (method: ", x$method, ")\n", sep = "")

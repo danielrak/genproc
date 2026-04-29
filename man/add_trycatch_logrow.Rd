@@ -50,7 +50,13 @@ The returned data.frame always has one row. Columns:
 }
 \examples{
 safe_sqrt <- add_trycatch_logrow(function(x) sqrt(x))
-safe_sqrt(4)    # success = TRUE, duration_secs > 0
-safe_sqrt("a")  # success = FALSE, error_message filled, traceback filled
+
+# Happy path: one-row data.frame, success = TRUE.
+safe_sqrt(4)[, c("x", "success", "error_message", "duration_secs")]
+
+# Failing call: the run does not stop. The row carries the error
+# message and a filtered traceback instead of throwing.
+bad <- safe_sqrt("a")
+bad[, c("x", "success", "error_message")]
 
 }

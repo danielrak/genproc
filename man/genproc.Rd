@@ -151,54 +151,35 @@ ignored.
 }
 }
 \examples{
-# Sequential (default)
+# Sequential run (the default). Returns immediately when done.
 result <- genproc(
   f = function(x, y) x + y,
   mask = data.frame(x = c(1, 2, 3), y = c(10, 20, 30))
 )
 result$log
 
-# Parallel — uses whatever future::plan() is currently set
+# One-off parallel call: genproc installs a temporary multisession
+# plan and restores the previous one on exit.
 \dontrun{
-  future::plan(future::multisession, workers = 4)
   result <- genproc(
     f = slow_function,
     mask = big_mask,
-    parallel = parallel_spec(seed = 42L)
+    parallel = parallel_spec(workers = 4)
   )
 }
 
-# One-off parallel call, temporary plan, restored on exit
-\dontrun{
-  result <- genproc(
-    f = my_fn,
-    mask = my_mask,
-    parallel = parallel_spec(strategy = "multisession", workers = 4)
-  )
-}
-
-# Non-blocking: return immediately, keep the console, collect later
+# Non-blocking + parallel composed: launch in the background,
+# keep the console, collect later with await().
 \dontrun{
   job <- genproc(
-    f = slow_fn,
-    mask = big_mask,
-    nonblocking = nonblocking_spec()
-  )
-  status(job)              # "running" or "done"
-  job <- await(job)        # blocks until resolution
-  job$log
-}
-
-# Parallel + non-blocking composed
-\dontrun{
-  job <- genproc(
-    f = slow_fn,
+    f = slow_function,
     mask = big_mask,
     parallel    = parallel_spec(workers = 6),
     nonblocking = nonblocking_spec()
   )
-  # do other work here
-  job <- await(job)
+  status(job)         # "running" until the future resolves
+  job <- await(job)   # blocks; idempotent on already-resolved jobs
+  job$log
 }
 
 }

@@ -15,6 +15,11 @@
 0 errors | 0 warnings | 1 note
 
 * This is a new submission.
+* The local check additionally emitted "checking for future file
+  timestamps ... NOTE: unable to verify current time" because the
+  external timestamp verification service was unreachable from the
+  check environment. The note does not appear on win-builder or
+  R-hub and is unrelated to the package's files.
 
 ## Notes for reviewers
 

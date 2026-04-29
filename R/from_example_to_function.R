@@ -46,6 +46,9 @@
 #'
 #' @examples
 #' # --- Basic usage ---
+#' # `input_path` exists in this environment; "output.csv" is a
+#' # string literal. Both become parameters of the resulting function,
+#' # with their original values as defaults.
 #' input_path <- "/data/input.csv"
 #'
 #' expr <- expression({
@@ -54,21 +57,18 @@
 #' })
 #'
 #' fn <- from_example_to_function(expr)
-#' fn
-#' # function(param_1 = "/data/input.csv", param_2 = "output.csv") {
-#' #   df <- read.csv(param_1)
-#' #   write.csv(df, param_2)
-#' # }
+#' formals(fn)
 #'
 #' # --- Local bindings are protected ---
+#' # `x` is assigned inside the block, so it is NOT parameterized
+#' # even though x = 42 exists in the calling environment.
 #' x <- 42
 #' expr2 <- expression({
 #'   x <- 1
 #'   y <- x + 1
 #' })
 #' fn2 <- from_example_to_function(expr2)
-#' # x is assigned inside the block, so it is NOT parameterized
-#' # even though x = 42 exists in the environment
+#' formals(fn2)
 #'
 #' @export
 from_example_to_function <- function(expr, env = parent.frame()) {

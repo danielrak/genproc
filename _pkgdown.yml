@@ -2,3 +2,40 @@ url: https://danielrak.github.io/genproc/
 template:
   bootstrap: 5
 
+reference:
+- title: Run an iteration
+  desc: >
+    The central entry point. Wraps a function and a mask with the two
+    mandatory layers (logged + reproducibility) and exposes the
+    optional ones.
+  contents:
+  - genproc
+  - print.genproc_result
+
+- title: Optional execution layers
+  desc: >
+    Composable specs passed to `genproc()`. Parallel dispatches cases
+    across workers via the future ecosystem. Non-blocking returns
+    immediately and lets you collect the result later.
+  contents:
+  - parallel_spec
+  - nonblocking_spec
+  - status
+  - await
+
+- title: Reproducibility tooling
+  desc: >
+    Compare two runs to detect silent drift of upstream input files.
+  contents:
+  - diff_inputs
+
+- title: Building blocks
+  desc: >
+    Derive the function and the mask from a working example. Useful
+    when migrating an existing one-off script to a genproc workflow.
+  contents:
+  - from_example_to_function
+  - from_function_to_mask
+  - rename_function_params
+  - add_trycatch_logrow
+

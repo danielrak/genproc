@@ -39,8 +39,13 @@
 #'   param_1 = "input_path",
 #'   param_2 = "output_path"
 #' ))
-#' # fn2 now has formals input_path and output_path,
-#' # and the body uses those names.
+#'
+#' # Formals were renamed:
+#' formals(fn2)
+#'
+#' # And the body too — references to `param_1` and `param_2` are
+#' # updated in place, the function source is not edited.
+#' body(fn2)
 #'
 #' @export
 rename_function_params <- function(f, mapping) {

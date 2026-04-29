@@ -45,8 +45,8 @@ consumable by a future companion Shiny package.
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/danielrak/genproc}
   \item \url{https://danielrak.github.io/genproc/}
+  \item \url{https://github.com/danielrak/genproc}
   \item Report bugs at \url{https://github.com/danielrak/genproc/issues}
 }
 

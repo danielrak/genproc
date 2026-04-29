@@ -2,9 +2,12 @@
 % Please edit documentation in R/diff_inputs.R
 \name{diff_inputs}
 \alias{diff_inputs}
+\alias{print.genproc_input_diff}
 \title{Compare input file fingerprints between two genproc runs}
 \usage{
 diff_inputs(r0, r1)
+
+\method{print}{genproc_input_diff}(x, ...)
 }
 \arguments{
 \item{r0, r1}{Two \code{genproc_result} objects. By convention, \code{r0} is
@@ -12,6 +15,10 @@ the earlier run and \code{r1} the later one, but the function is
 symmetric with respect to \code{changed} / \code{unchanged}. The labels
 \code{removed} (present in \code{r0}, absent in \code{r1}) and \code{added} (the
 opposite) follow the asymmetric convention.}
+
+\item{x}{A \code{genproc_input_diff} object.}
+
+\item{...}{Ignored (present for S3 method consistency).}
 }
 \value{
 An object of class \code{genproc_input_diff} (a named list)
@@ -40,11 +47,24 @@ Files are matched by canonical absolute path. The \code{method} field
 must agree between the two runs.
 }
 \examples{
-\dontrun{
-  r0 <- genproc(my_fn, my_mask)
-  # ... edit one of the input CSVs ...
-  r1 <- genproc(my_fn, my_mask)
-  diff_inputs(r0, r1)
-}
+# Two runs of the same procedure, with one input file rewritten
+# in between. `diff_inputs()` reports the drift.
+src <- file.path(tempdir(), "diff-inputs-demo")
+dir.create(src, showWarnings = FALSE, recursive = TRUE)
+write.csv(head(iris), file.path(src, "a.csv"), row.names = FALSE)
+
+mask <- data.frame(
+  path = file.path(src, "a.csv"),
+  stringsAsFactors = FALSE
+)
+read_one <- function(path) nrow(read.csv(path))
+
+r0 <- genproc(read_one, mask)
+
+# Rewrite the file with strictly more rows: size changes.
+write.csv(iris, file.path(src, "a.csv"), row.names = FALSE)
+
+r1 <- genproc(read_one, mask)
+diff_inputs(r0, r1)
 
 }
