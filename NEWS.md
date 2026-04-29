@@ -2,6 +2,20 @@
 
 ## New features
 
+* New `errors(result)` returns the failed-case rows of the log
+  with all original columns (case_id, mask params, error_message,
+  traceback, duration_secs). Replaces the boilerplate
+  `result$log[!result$log$success, ]` pattern.
+* New `summary(result)` (S3 method on `genproc_result`) produces
+  a compact human-readable digest: status, success rate,
+  per-case duration stats (mean, max, slowest case_id), and the
+  top recurring error messages by occurrence (configurable via
+  `top_errors`). Useful on runs with many cases where the raw log
+  is too noisy to eyeball.
+* New `rerun_failed(r0, f)` helper. Sibling of
+  `rerun_affected()`: filters the original mask down to the cases
+  that failed and re-runs `genproc()` on that subset only. Useful
+  after fixing the cause of a transient failure.
 * New `rerun_affected(r0, diff, f)` helper. Closes the
   reproducibility loop: when [diff_inputs()] reports drift between
   two runs, `rerun_affected()` filters the original mask down to

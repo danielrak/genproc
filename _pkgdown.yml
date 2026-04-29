@@ -23,6 +23,15 @@ reference:
   - status
   - await
 
+- title: Inspecting a result
+  desc: >
+    Drill into the log of a completed run, and re-run only the
+    cases that failed.
+  contents:
+  - errors
+  - summary.genproc_result
+  - rerun_failed
+
 - title: Reproducibility tooling
   desc: >
     Compare two runs to detect silent drift of upstream input files,
