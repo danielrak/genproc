@@ -47,6 +47,15 @@ inside it, the parallel layer dispatches cases via
 \pkg{future} resolves the inner layer as \code{"sequential"} by default
 (see \code{future::plan()} nesting rules) unless the caller installs an
 explicit nested plan via \code{future::plan(list(...))}.
+
+On Windows and in some RStudio configurations, the wrapper
+subprocess inherits \code{getOption("mc.cores")} set to 1, which would
+lead \code{parallelly} to refuse the inner workers ("only 1 CPU core
+available for this R process"), and to also emit a misleading
+soft-limit warning even after the refusal is lifted. \code{\link[=genproc]{genproc()}}
+works around both issues transparently in the composed case (only
+when the user has not set their own values). See \code{?genproc} for
+details.
 }
 
 \examples{

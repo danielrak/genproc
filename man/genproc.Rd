@@ -132,6 +132,31 @@ run continues with the next case. This holds identically in
 sequential and parallel mode.
 }
 
+\subsection{Composing parallel and non-blocking}{
+
+When both \code{parallel} and \code{nonblocking} are supplied, the
+non-blocking wrapper envelops the parallel dispatch (one outer
+future submits the run, inner workers process the cases). On
+platforms where the wrapper subprocess R inherits a restrictive
+default for \code{getOption("mc.cores")} (typically 1 on Windows and in
+some RStudio configurations), \code{parallelly} would otherwise refuse
+to spawn the inner workers. \code{genproc()} works around this with
+two surgical adjustments inside the wrapper subprocess, applied
+\emph{only} in the composed case and \emph{only} when the user has not set
+their own values:
+\enumerate{
+\item Set \code{R_PARALLELLY_AVAILABLECORES_METHODS = "system"} so that
+\code{availableCores()} ignores the legacy \code{mc.cores} option and
+reports the true detected core count (lifts the hard-limit
+refusal).
+\item Raise \code{options(mc.cores)} from 1 to the system core count, so
+that \code{parallelly}'s soft-limit warning no longer fires with a
+misleading "only 1 CPU cores available" message.
+}
+
+The calling session is never modified by either adjustment.
+}
+
 \subsection{Case IDs}{
 
 Each row of the mask receives a \code{case_id} (currently index-based:
