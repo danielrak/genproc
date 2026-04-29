@@ -1,4 +1,12 @@
-# genproc 0.0.0.9000 (development)
+# genproc 0.1.0
+
+First public release. The package consolidates the four execution
+layers (logged, reproducibility, parallel, non-blocking) and the
+building blocks (`from_example_to_function()`,
+`from_function_to_mask()`, `rename_function_params()`,
+`add_trycatch_logrow()`) under a stable API contract. The
+`genproc_result` S3 class fields are guaranteed forward-compatible
+across the 0.x series.
 
 ## Execution layers
 

@@ -26,7 +26,7 @@ Two layers are always active and cannot be disabled:
 - **Reproducibility** — each run records the R version, loaded package
   versions, execution environment, the exact iteration mask, and the
   spec of any optional layer used, so that two runs can be compared and
-  any parameter drift is auditable.
+  any change in execution parameters is auditable.
 
 Two optional layers can be composed with the defaults, at the caller’s
 choice:
@@ -83,9 +83,12 @@ mask <- data.frame(
 result <- genproc(convert, mask)
 ```
 
-Every run returns a `genproc_result`. The log contains one row per case,
-with stable `case_id`, the parameter values, `success`, `error_message`,
-`traceback`, and `duration_secs`:
+Every run returns a `genproc_result`. The `log` data.frame holds one row
+per case, with `case_id`, the mask parameter values (`src_dir`,
+`src_file`, `dst_dir`, `dst_file` here), then `success`,
+`error_message`, `traceback`, and `duration_secs`. Below we display a
+subset of those columns for readability — `error_message` and
+`traceback` are `NA` on this happy path:
 
 ``` r
 result$log[, c("case_id", "src_file", "dst_file",
@@ -97,20 +100,22 @@ result$log[, c("case_id", "src_file", "dst_file",
 ```
 
 If a case fails, the run continues — the error is captured, not thrown.
-Here we delete one source file on purpose before a second run:
+Below we point one row of the mask to a file that does not exist;
+`b.csv` itself is left untouched on disk so subsequent sections of this
+README can still reference it:
 
 ``` r
-file.remove(file.path(src_dir, "b.csv"))
-#> [1] TRUE
+mask_with_missing <- mask
+mask_with_missing$src_file[2] <- "does_not_exist.csv"
 
-result2 <- genproc(convert, mask)
-#> Warning in file(file, "rt"): impossible d'ouvrir le fichier
-#> 'C:\Users\rheri\AppData\Local\Temp\RtmpegrrE4/src/b.csv' : No such file or
-#> directory
-result2$log[result2$log$success == FALSE,
+result2 <- genproc(convert, mask_with_missing)
+#> Warning in file(file, "rt"): cannot open file
+#> 'C:\Users\rheri\AppData\Local\Temp\RtmpsrBmc8/src/does_not_exist.csv': No such
+#> file or directory
+result2$log[!result2$log$success,
             c("case_id", "src_file", "error_message")]
-#>     case_id src_file                    error_message
-#> 2 case_0002    b.csv impossible d'ouvrir la connexion
+#>     case_id           src_file              error_message
+#> 2 case_0002 does_not_exist.csv cannot open the connection
 result2$n_success
 #> [1] 2
 result2$n_error
@@ -132,13 +137,13 @@ sync:
 ``` r
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-28 19:37:59"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 12:26:01"
 #>  $ r_version    : chr "R version 4.5.1 (2025-06-13 ucrt)"
 #>  $ platform     : chr "x86_64-w64-mingw32"
 #>  $ os           : chr "Windows 10 x64"
 #>  $ locale       : chr "LC_COLLATE=French_France.utf8;LC_CTYPE=French_France.utf8;LC_MONETARY=French_France.utf8;LC_NUMERIC=C;LC_TIME=F"| __truncated__
 #>  $ timezone     : chr "Europe/Paris"
-#>  $ packages     : Named chr [1:22] "0.0.0.9000" "4.5.1" "1.2.0" "3.6.5" ...
+#>  $ packages     : Named chr [1:22] "0.1.0" "4.5.1" "1.2.0" "3.6.5" ...
 #>   ..- attr(*, "names")= chr [1:22] "genproc" "compiler" "fastmap" "cli" ...
 #>  $ mask_snapshot:'data.frame':   3 obs. of  4 variables:
 #>  $ parallel     : NULL
@@ -167,12 +172,15 @@ mask_paths <- data.frame(
 do_one <- function(csv_in) nrow(read.csv(csv_in))
 
 run0 <- genproc(do_one, mask_paths)
-#> Warning in file(file, "rt"): impossible d'ouvrir le fichier
-#> 'C:\Users\rheri\AppData\Local\Temp\RtmpegrrE4/src/b.csv' : No such file or
-#> directory
 run0$reproducibility$inputs$files
-#> [1] path  size  mtime
-#> <0 lignes> (ou 'row.names' de longueur nulle)
+#>                                                     path size
+#> 1 C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/a.csv  221
+#> 2 C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/b.csv  303
+#> 3 C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/c.csv  161
+#>                 mtime
+#> 1 2026-04-29 12:26:01
+#> 2 2026-04-29 12:26:01
+#> 3 2026-04-29 12:26:01
 ```
 
 `diff_inputs()` compares two runs and tells you which referenced files
@@ -183,15 +191,17 @@ have changed since the first one:
 write.csv(iris, file.path(src_dir, "a.csv"), row.names = FALSE)
 
 run1 <- genproc(do_one, mask_paths)
-#> Warning in file(file, "rt"): impossible d'ouvrir le fichier
-#> 'C:\Users\rheri\AppData\Local\Temp\RtmpegrrE4/src/b.csv' : No such file or
-#> directory
 diff_inputs(run0, run1)
 #> genproc input diff (method: stat)
-#>   Changed:   0
-#>   Unchanged: 0
+#>   Changed:   1
+#>   Unchanged: 2
 #>   Removed:   0
 #>   Added:     0
+#> 
+#> Changed files:
+#>   C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/a.csv
+#>       size:  221 B -> 4.1 KB
+#>       mtime: 2026-04-29 12:26:01 -> 2026-04-29 12:26:01
 ```
 
 The default method is `"stat"` (size + mtime). It detects every
