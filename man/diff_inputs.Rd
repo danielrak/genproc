@@ -34,6 +34,11 @@ mtime are identical in both runs.}
 snapshot but absent in \code{r1}'s.}
 \item{added}{Character vector of paths present in \code{r1}'s
 snapshot but absent in \code{r0}'s.}
+\item{cases_affected}{A data.frame with columns \code{case_id},
+\code{path}, \code{column}, \code{change_type} (one of \code{"changed"},
+\code{"removed"}, \code{"added"}). One row per (case, input column)
+impacted by the diff. Pass to \code{\link[=rerun_affected]{rerun_affected()}} to re-run
+only the impacted cases.}
 }
 }
 \description{
