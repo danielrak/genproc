@@ -23,7 +23,7 @@ stable case IDs linking log rows to mask rows
 
     <a class="navbar-brand me-2" href="../index.html">genproc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -208,6 +208,29 @@ wrapped with <code><a href="add_trycatch_logrow.html">add_trycatch_logrow()</a><
 message and the real traceback (via <code>withCallingHandlers</code>). The
 run continues with the next case. This holds identically in
 sequential and parallel mode.</p>
+</div>
+
+<div class="section">
+<h3 id="composing-parallel-and-non-blocking">Composing parallel and non-blocking<a class="anchor" aria-label="anchor" href="#composing-parallel-and-non-blocking"></a></h3>
+
+
+<p>When both <code>parallel</code> and <code>nonblocking</code> are supplied, the
+non-blocking wrapper envelops the parallel dispatch (one outer
+future submits the run, inner workers process the cases). On
+platforms where the wrapper subprocess R inherits a restrictive
+default for <code>getOption("mc.cores")</code> (typically 1 on Windows and in
+some RStudio configurations), <code>parallelly</code> would otherwise refuse
+to spawn the inner workers. <code>genproc()</code> works around this with
+two surgical adjustments inside the wrapper subprocess, applied
+<em>only</em> in the composed case and <em>only</em> when the user has not set
+their own values:</p><ol><li><p>Set <code>R_PARALLELLY_AVAILABLECORES_METHODS = "system"</code> so that
+<code>availableCores()</code> ignores the legacy <code>mc.cores</code> option and
+reports the true detected core count (lifts the hard-limit
+refusal).</p></li>
+<li><p>Raise <code>options(mc.cores)</code> from 1 to the system core count, so
+that <code>parallelly</code>'s soft-limit warning no longer fires with a
+misleading "only 1 CPU cores available" message.</p></li>
+</ol><p>The calling session is never modified by either adjustment.</p>
 </div>
 
 <div class="section">

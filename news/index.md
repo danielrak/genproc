@@ -1,5 +1,111 @@
 # Changelog
 
+## genproc 0.2.0 (development version)
+
+### New features
+
+- New `errors(result)` returns the failed-case rows of the log with all
+  original columns (case_id, mask params, error_message, traceback,
+  duration_secs). Replaces the boilerplate
+  `result$log[!result$log$success, ]` pattern.
+- New `summary(result)` (S3 method on `genproc_result`) produces a
+  compact human-readable digest: status, success rate, per-case duration
+  stats (mean, max, slowest case_id), and the top recurring error
+  messages by occurrence (configurable via `top_errors`). Useful on runs
+  with many cases where the raw log is too noisy to eyeball.
+- New `rerun_failed(r0, f)` helper. Sibling of
+  [`rerun_affected()`](https://danielrak.github.io/genproc/reference/rerun_affected.md):
+  filters the original mask down to the cases that failed and re-runs
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+  on that subset only. Useful after fixing the cause of a transient
+  failure.
+- New `rerun_affected(r0, diff, f)` helper. Closes the reproducibility
+  loop: when \[diff_inputs()\] reports drift between two runs,
+  [`rerun_affected()`](https://danielrak.github.io/genproc/reference/rerun_affected.md)
+  filters the original mask down to the cases that referenced the
+  impacted files and re-runs
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+  on that subset only. The resulting `genproc_result` is a small
+  refresh, not a full re-run.
+- [`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
+  now returns a new `$cases_affected` field: a data.frame with columns
+  `case_id`, `path`, `column`, `change_type` listing every (case, input
+  column) pair impacted by the diff. Available both programmatically and
+  as input to
+  [`rerun_affected()`](https://danielrak.github.io/genproc/reference/rerun_affected.md).
+  The print method also shows a concise summary (“Cases affected: N”)
+  and a hint towards
+  [`rerun_affected()`](https://danielrak.github.io/genproc/reference/rerun_affected.md).
+- `print.genproc_input_diff` now distinguishes small size variations
+  whose human-readable rounding is identical: when the formatted size is
+  the same on both sides, the byte delta is shown explicitly
+  (`size: 1.1 KB -> 1.1 KB (+6 B)`).
+
+### UX improvements
+
+- `result$reproducibility$parallel` now carries an `effective_strategy`
+  field alongside the user-requested `strategy`. The two differ when the
+  user passed `workers` without an explicit `strategy`, in which case
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+  auto-defaults to `"multisession"`; the snapshot now records both,
+  preserving the audit trail of what was requested vs what was applied.
+  The `Mode` line of `print(result)` now shows the effective strategy by
+  default, so a sequential vs parallel multisession run is no longer
+  ambiguous in the printed summary.
+
+- [`status()`](https://danielrak.github.io/genproc/reference/status.md)
+  now distinguishes `"done"` (the wrapper future resolved successfully)
+  from `"error"` (the wrapper crashed), even before \[await()\] is
+  called. Previously
+  [`status()`](https://danielrak.github.io/genproc/reference/status.md)
+  returned `"done"` as soon as the future was resolved, regardless of
+  outcome — leading to the misleading `Status: done (not collected)`
+  print on a job that had actually failed. The peek result is cached in
+  a shared environment so that a subsequent
+  [`await()`](https://danielrak.github.io/genproc/reference/await.md)
+  does not re-materialize the future.
+
+- `print(result)` is more informative: a `Started` line shows the run’s
+  timestamp, a `Mode` line summarises the execution configuration
+  (`sequential`, `multisession parallel (4 workers)`,
+  `non-blocking + multisession parallel (6 workers)`, etc.), and the
+  method emits `errors(x)` / `summary(x)` hints when failures occurred.
+  The non-blocking print also distinguishes `done (not collected)` from
+  `error (not collected)`.
+
+- When `parallel` was used but startup overhead clearly dominated the
+  run, `print(result)` now emits a `Note` warning. Two metrics: parallel
+  efficiency below 50% when `workers` is supplied (catches cases like
+  `parallel_spec(workers = 4)` that yield no real speedup), or
+  wall-clock above `cumulative * 1.2` in power-user mode (workers
+  unknown). Both require wall \> 0.5s to avoid noise. Addresses the
+  common surprise of activating parallel on a small workload and
+  observing a slowdown.
+
+- Tracebacks captured by the logged layer are now substantially shorter
+  and easier to read. Internal dispatcher frames (`execute_cases`,
+  `do.call`, `FUN`), invocation context frames (`source`, `eval`,
+  `withVisible`), and PSOCK worker frames (`workRSOCK`, `workLoop`,
+  `workCommand`, `makeSOCKmaster`) are now dropped from the head of the
+  stack, so the first surviving frame is always user code. User calls to
+  [`lapply()`](https://rdrr.io/r/base/lapply.html) or
+  [`do.call()`](https://rdrr.io/r/base/do.call.html) from within their
+  own function are preserved (the head-position filter only consumes
+  leading frames).
+
+- Composing `parallel = parallel_spec(...)` and
+  `nonblocking = nonblocking_spec(...)` now works out of the box on
+  Windows and in RStudio configurations where the wrapper subprocess
+  inherits `getOption("mc.cores")` set to 1. Previously, the composed
+  call failed with a `parallelly` “only 1 CPU cores available” error,
+  and (less visibly) emitted a misleading soft-limit warning.
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+  now applies two surgical adjustments inside the wrapper subprocess in
+  the composed case (only when the user has not set their own values):
+  it sets `R_PARALLELLY_AVAILABLECORES_METHODS = "system"` to lift the
+  hard limit, and raises `options(mc.cores)` to silence the soft-limit
+  warning. The calling session is never modified.
+
 ## genproc 0.1.0
 
 First public release. The package consolidates the four execution layers

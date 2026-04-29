@@ -10,6 +10,7 @@
 <url><loc>https://danielrak.github.io/genproc/reference/add_trycatch_logrow.html</loc></url>
 <url><loc>https://danielrak.github.io/genproc/reference/await.html</loc></url>
 <url><loc>https://danielrak.github.io/genproc/reference/diff_inputs.html</loc></url>
+<url><loc>https://danielrak.github.io/genproc/reference/errors.html</loc></url>
 <url><loc>https://danielrak.github.io/genproc/reference/from_example_to_function.html</loc></url>
 <url><loc>https://danielrak.github.io/genproc/reference/from_function_to_mask.html</loc></url>
 <url><loc>https://danielrak.github.io/genproc/reference/genproc-package.html</loc></url>
@@ -18,7 +19,11 @@
 <url><loc>https://danielrak.github.io/genproc/reference/nonblocking_spec.html</loc></url>
 <url><loc>https://danielrak.github.io/genproc/reference/parallel_spec.html</loc></url>
 <url><loc>https://danielrak.github.io/genproc/reference/print.genproc_result.html</loc></url>
+<url><loc>https://danielrak.github.io/genproc/reference/print.genproc_result_summary.html</loc></url>
 <url><loc>https://danielrak.github.io/genproc/reference/rename_function_params.html</loc></url>
+<url><loc>https://danielrak.github.io/genproc/reference/rerun_affected.html</loc></url>
+<url><loc>https://danielrak.github.io/genproc/reference/rerun_failed.html</loc></url>
 <url><loc>https://danielrak.github.io/genproc/reference/status.html</loc></url>
+<url><loc>https://danielrak.github.io/genproc/reference/summary.genproc_result.html</loc></url>
 </urlset>
 

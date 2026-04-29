@@ -61,6 +61,17 @@ resolves the inner layer as `"sequential"` by default (see
 nesting rules) unless the caller installs an explicit nested plan via
 `future::plan(list(...))`.
 
+On Windows and in some RStudio configurations, the wrapper subprocess
+inherits `getOption("mc.cores")` set to 1, which would lead `parallelly`
+to refuse the inner workers ("only 1 CPU core available for this R
+process"), and to also emit a misleading soft-limit warning even after
+the refusal is lifted.
+[`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+works around both issues transparently in the composed case (only when
+the user has not set their own values). See
+[`?genproc`](https://danielrak.github.io/genproc/reference/genproc.md)
+for details.
+
 ## See also
 
 [`parallel_spec()`](https://danielrak.github.io/genproc/reference/parallel_spec.md),

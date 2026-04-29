@@ -10,13 +10,13 @@ Source:
 [`DESCRIPTION`](https://github.com/danielrak/genproc/blob/master/DESCRIPTION)
 
 Rakotomalala D (2026). *genproc: Robust, Logged and Reproducible
-Iteration at Organizational Scale*. R package version 0.1.0,
+Iteration at Organizational Scale*. R package version 0.1.0.9000,
 <https://danielrak.github.io/genproc/>.
 
     @Manual{,
       title = {genproc: Robust, Logged and Reproducible Iteration at Organizational Scale},
       author = {Daniel Rakotomalala},
       year = {2026},
-      note = {R package version 0.1.0},
+      note = {R package version 0.1.0.9000},
       url = {https://danielrak.github.io/genproc/},
     }

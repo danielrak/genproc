@@ -62,6 +62,14 @@ An object of class `genproc_input_diff` (a named list) with components:
   Character vector of paths present in `r1`'s snapshot but absent in
   `r0`'s.
 
+- cases_affected:
+
+  A data.frame with columns `case_id`, `path`, `column`, `change_type`
+  (one of `"changed"`, `"removed"`, `"added"`). One row per (case, input
+  column) impacted by the diff. Pass to
+  [`rerun_affected()`](https://danielrak.github.io/genproc/reference/rerun_affected.md)
+  to re-run only the impacted cases.
+
 ## Details
 
 Files are matched by canonical absolute path. The `method` field must
@@ -94,9 +102,13 @@ diff_inputs(r0, r1)
 #>   Unchanged: 0
 #>   Removed:   0
 #>   Added:     0
+#>   Cases affected: 1
 #> 
 #> Changed files:
-#>   /tmp/RtmpLpm5wN/diff-inputs-demo/a.csv
+#>   /tmp/Rtmpnu518M/diff-inputs-demo/a.csv
 #>       size:  214 B -> 3.9 KB
-#>       mtime: 2026-04-29 15:57:58 -> 2026-04-29 15:57:58
+#>       mtime: 2026-04-29 20:33:34 -> 2026-04-29 20:33:34
+#> 
+#> Cases affected (use rerun_affected() to re-run):
+#>   case_0001
 ```

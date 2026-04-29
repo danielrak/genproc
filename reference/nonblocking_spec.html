@@ -15,7 +15,7 @@ to poll the state and await() to block until completion.'></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">genproc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -101,6 +101,14 @@ inside it, the parallel layer dispatches cases via
 <span class="pkg">future</span> resolves the inner layer as <code>"sequential"</code> by default
 (see <code><a href="https://future.futureverse.org/reference/plan.html" class="external-link">future::plan()</a></code> nesting rules) unless the caller installs an
 explicit nested plan via <code>future::plan(list(...))</code>.</p>
+<p>On Windows and in some RStudio configurations, the wrapper
+subprocess inherits <code>getOption("mc.cores")</code> set to 1, which would
+lead <code>parallelly</code> to refuse the inner workers ("only 1 CPU core
+available for this R process"), and to also emit a misleading
+soft-limit warning even after the refusal is lifted. <code><a href="genproc.html">genproc()</a></code>
+works around both issues transparently in the composed case (only
+when the user has not set their own values). See <code><a href="genproc.html">?genproc</a></code> for
+details.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

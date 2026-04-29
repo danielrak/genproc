@@ -13,7 +13,7 @@ changed since the first run."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">genproc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -98,6 +98,13 @@ snapshot but absent in <code>r1</code>'s.</p></dd>
 <dd><p>Character vector of paths present in <code>r1</code>'s
 snapshot but absent in <code>r0</code>'s.</p></dd>
 
+<dt>cases_affected</dt>
+<dd><p>A data.frame with columns <code>case_id</code>,
+<code>path</code>, <code>column</code>, <code>change_type</code> (one of <code>"changed"</code>,
+<code>"removed"</code>, <code>"added"</code>). One row per (case, input column)
+impacted by the diff. Pass to <code><a href="rerun_affected.html">rerun_affected()</a></code> to re-run
+only the impacted cases.</p></dd>
+
 
 </dl></div>
     <div class="section level2">
@@ -132,11 +139,15 @@ must agree between the two runs.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Unchanged: 0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Removed:   0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Added:     0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Cases affected: 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Changed files:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   /tmp/RtmpLpm5wN/diff-inputs-demo/a.csv</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   /tmp/Rtmpnu518M/diff-inputs-demo/a.csv</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>       size:  214 B -&gt; 3.9 KB</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       mtime: 2026-04-29 15:57:58 -&gt; 2026-04-29 15:57:58</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       mtime: 2026-04-29 20:33:34 -&gt; 2026-04-29 20:33:34</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Cases affected (use rerun_affected() to re-run):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   case_0001</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

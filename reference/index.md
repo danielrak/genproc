@@ -28,13 +28,30 @@ Non-blocking returns immediately and lets you collect the result later.
 - [`await()`](https://danielrak.github.io/genproc/reference/await.md) :
   Block until a non-blocking genproc run has resolved
 
+## Inspecting a result
+
+Drill into the log of a completed run, and re-run only the cases that
+failed.
+
+- [`errors()`](https://danielrak.github.io/genproc/reference/errors.md)
+  : Subset a genproc result to its failed cases
+- [`summary(`*`<genproc_result>`*`)`](https://danielrak.github.io/genproc/reference/summary.genproc_result.md)
+  : Summarise a genproc result
+- [`print(`*`<genproc_result_summary>`*`)`](https://danielrak.github.io/genproc/reference/print.genproc_result_summary.md)
+  : Print method for genproc_result_summary
+- [`rerun_failed()`](https://danielrak.github.io/genproc/reference/rerun_failed.md)
+  : Re-run only the cases that failed
+
 ## Reproducibility tooling
 
-Compare two runs to detect silent drift of upstream input files.
+Compare two runs to detect silent drift of upstream input files, and
+re-run only the cases impacted by the drift.
 
 - [`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
   [`print(`*`<genproc_input_diff>`*`)`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
   : Compare input file fingerprints between two genproc runs
+- [`rerun_affected()`](https://danielrak.github.io/genproc/reference/rerun_affected.md)
+  : Re-run only the cases impacted by an input diff
 
 ## Building blocks
 

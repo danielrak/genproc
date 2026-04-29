@@ -1,13 +1,17 @@
 # Query the status of a genproc run without blocking
 
 `status()` is a non-blocking S3 generic. On a `genproc_result`, it
-returns `"running"` while a background future is unresolved, and
-`"done"` once it has resolved (or if the object is already
-synchronous-done). It does *not* materialize the result — use
-[`await()`](https://danielrak.github.io/genproc/reference/await.md) for
-that. If you want to know whether the wrapper future itself crashed, you
-must call
-[`await()`](https://danielrak.github.io/genproc/reference/await.md).
+returns one of:
+
+- `"running"` — the underlying future is not yet resolved.
+
+- `"done"` — the future has resolved successfully (the result is ready
+  to be collected via
+  [`await()`](https://danielrak.github.io/genproc/reference/await.md)).
+
+- `"error"` — the wrapper future itself crashed. Call
+  [`await()`](https://danielrak.github.io/genproc/reference/await.md) to
+  retrieve the error message.
 
 ## Usage
 
@@ -30,7 +34,19 @@ status(x, ...)
 
 ## Value
 
-A single character string.
+A single character string: `"running"`, `"done"`, or `"error"`.
+
+## Details
+
+For a synchronous (non-`nonblocking`) result, `status()` simply returns
+`result$status` (`"done"` or `"error"`).
+
+`status()` peeks at the resolved future via
+[`future::value()`](https://future.futureverse.org/reference/value.html)
+inside a `tryCatch`. Because `value()` consumes the future, the peek
+result is cached in a shared environment so that a subsequent
+[`await()`](https://danielrak.github.io/genproc/reference/await.md) does
+not re-materialize it.
 
 ## See also
 

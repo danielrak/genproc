@@ -75,15 +75,15 @@ Column order is designed for a human scanning a run:
 ``` r
 result$log
 #>     case_id                              src_dir src_file
-#> 1 case_0001 /tmp/Rtmp8Aie6Z/genproc-vignette-src    a.csv
-#> 2 case_0002 /tmp/Rtmp8Aie6Z/genproc-vignette-src    b.csv
-#> 3 case_0003 /tmp/Rtmp8Aie6Z/genproc-vignette-src    c.csv
+#> 1 case_0001 /tmp/RtmpmGvwTc/genproc-vignette-src    a.csv
+#> 2 case_0002 /tmp/RtmpmGvwTc/genproc-vignette-src    b.csv
+#> 3 case_0003 /tmp/RtmpmGvwTc/genproc-vignette-src    c.csv
 #>                                dst_dir dst_file success error_message traceback
-#> 1 /tmp/Rtmp8Aie6Z/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
-#> 2 /tmp/Rtmp8Aie6Z/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
-#> 3 /tmp/Rtmp8Aie6Z/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
+#> 1 /tmp/RtmpmGvwTc/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
+#> 2 /tmp/RtmpmGvwTc/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
+#> 3 /tmp/RtmpmGvwTc/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
 #>   duration_secs
-#> 1         0.001
+#> 1         0.000
 #> 2         0.001
 #> 3         0.001
 ```
@@ -97,13 +97,13 @@ of the mask can be reordered between runs.
 ``` r
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 15:58:02"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 20:33:38"
 #>  $ r_version    : chr "R version 4.6.0 (2026-04-24)"
 #>  $ platform     : chr "x86_64-pc-linux-gnu"
 #>  $ os           : chr "Linux 6.17.0-1010-azure"
 #>  $ locale       : chr "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C.UTF-8;LC_COLLATE=C.UTF-8;LC_MONETARY=C.UTF-8;LC_MESSAGES=C;LC_PAPER=C.U"| __truncated__
 #>  $ timezone     : chr "UTC"
-#>  $ packages     : Named chr [1:33] "0.1.0" "0.6.39" "1.4.3" "2.6.1" ...
+#>  $ packages     : Named chr [1:33] "0.1.0.9000" "0.6.39" "1.4.3" "2.6.1" ...
 #>   ..- attr(*, "names")= chr [1:33] "genproc" "digest" "desc" "R6" ...
 #>  $ mask_snapshot:'data.frame':   3 obs. of  4 variables:
 #>  $ parallel     : NULL
@@ -120,7 +120,15 @@ str(result$reproducibility, max.level = 1)
 - `parallel`: `NULL` for a sequential run, or a plain list mirroring the
   [`parallel_spec()`](https://danielrak.github.io/genproc/reference/parallel_spec.md)
   used. Dropped class to make the snapshot portable to serialization
-  formats.
+  formats. The list also carries `effective_strategy`: the strategy
+  actually applied by
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md),
+  which differs from `strategy` when the user passed `workers` without
+  an explicit `strategy` and
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+  auto-defaulted to `"multisession"`. Both fields are recorded so the
+  snapshot is self-explanatory: `strategy` is what the user asked for,
+  `effective_strategy` is what was applied.
 - `nonblocking`: same pattern, for
   [`nonblocking_spec()`](https://danielrak.github.io/genproc/reference/nonblocking_spec.md).
 - `inputs`: a fingerprint of every file the mask refers to, or `NULL` if
@@ -171,9 +179,9 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                         path size               mtime
-#> 1 /tmp/Rtmp8Aie6Z/genproc-vignette-src/a.csv  214 2026-04-29 15:58:02
-#> 2 /tmp/Rtmp8Aie6Z/genproc-vignette-src/b.csv  296 2026-04-29 15:58:02
-#> 3 /tmp/Rtmp8Aie6Z/genproc-vignette-src/c.csv  154 2026-04-29 15:58:02
+#> 1 /tmp/RtmpmGvwTc/genproc-vignette-src/a.csv  214 2026-04-29 20:33:38
+#> 2 /tmp/RtmpmGvwTc/genproc-vignette-src/b.csv  296 2026-04-29 20:33:38
+#> 3 /tmp/RtmpmGvwTc/genproc-vignette-src/c.csv  154 2026-04-29 20:33:38
 ```
 
 #### Shared inputs are deduplicated
@@ -234,11 +242,15 @@ diff_inputs(run0, run1)
 #>   Unchanged: 2
 #>   Removed:   0
 #>   Added:     0
+#>   Cases affected: 1
 #> 
 #> Changed files:
-#>   /tmp/Rtmp8Aie6Z/genproc-vignette-src/a.csv
+#>   /tmp/RtmpmGvwTc/genproc-vignette-src/a.csv
 #>       size:  214 B -> 3.9 KB
-#>       mtime: 2026-04-29 15:58:02 -> 2026-04-29 15:58:02
+#>       mtime: 2026-04-29 20:33:38 -> 2026-04-29 20:33:39
+#> 
+#> Cases affected (use rerun_affected() to re-run):
+#>   case_0001
 ```
 
 [`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
@@ -262,7 +274,7 @@ file.remove(file.path(src_dir, "b.csv"))
 #> [1] TRUE
 result_broken <- genproc(convert, mask)
 #> Warning in file(file, "rt"): cannot open file
-#> '/tmp/Rtmp8Aie6Z/genproc-vignette-src/b.csv': No such file or directory
+#> '/tmp/RtmpmGvwTc/genproc-vignette-src/b.csv': No such file or directory
 
 result_broken$n_success
 #> [1] 2
@@ -325,10 +337,10 @@ example <- expression({
 fn <- from_example_to_function(example)
 formals(fn)
 #> $param_1
-#> [1] "/tmp/Rtmp8Aie6Z/genproc-vignette-src/a.csv"
+#> [1] "/tmp/RtmpmGvwTc/genproc-vignette-src/a.csv"
 #> 
 #> $param_2
-#> [1] "/tmp/Rtmp8Aie6Z/genproc-vignette-dst/a-from-example.rds"
+#> [1] "/tmp/RtmpmGvwTc/genproc-vignette-dst/a-from-example.rds"
 ```
 
 ### 2. `from_function_to_mask()` — function signature to mask template
@@ -342,9 +354,9 @@ full mask.
 mask_template <- from_function_to_mask(fn)
 mask_template
 #>                                      param_1
-#> 1 /tmp/Rtmp8Aie6Z/genproc-vignette-src/a.csv
+#> 1 /tmp/RtmpmGvwTc/genproc-vignette-src/a.csv
 #>                                                   param_2
-#> 1 /tmp/Rtmp8Aie6Z/genproc-vignette-dst/a-from-example.rds
+#> 1 /tmp/RtmpmGvwTc/genproc-vignette-dst/a-from-example.rds
 ```
 
 ### 3. `rename_function_params()` — give the parameters domain names
@@ -359,10 +371,10 @@ fn_named <- rename_function_params(
 )
 formals(fn_named)
 #> $input_path
-#> [1] "/tmp/Rtmp8Aie6Z/genproc-vignette-src/a.csv"
+#> [1] "/tmp/RtmpmGvwTc/genproc-vignette-src/a.csv"
 #> 
 #> $output_path
-#> [1] "/tmp/Rtmp8Aie6Z/genproc-vignette-dst/a-from-example.rds"
+#> [1] "/tmp/RtmpmGvwTc/genproc-vignette-dst/a-from-example.rds"
 ```
 
 Putting it together: a renamed function plus a manually-built mask that
@@ -544,6 +556,34 @@ and degrades the inner layer to `sequential` by default, to avoid worker
 explosion. For true nested parallelism, install
 `future::plan(list(...))` explicitly and pass `strategy = NULL` on both
 specs.
+
+### Default `mc.cores` in the wrapper subprocess
+
+On Windows and in some RStudio configurations, the wrapper subprocess
+inherits `getOption("mc.cores")` set to `1` (the legacy default for
+[`parallel::mclapply()`](https://rdrr.io/r/parallel/mclapply.html),
+which is a no-op on Windows). Without intervention, `parallelly` would
+refuse to spawn the inner workers because `workers / 1` exceeds the
+localhost hard limit, and the composed call would fail with a confusing
+`"only 1 CPU cores available for this R process (per 'mc.cores')"`
+error.
+
+[`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+handles this transparently. In the composed case
+(`parallel != NULL && nonblocking != NULL`), it makes two adjustments
+inside the wrapper subprocess:
+
+1.  Sets `R_PARALLELLY_AVAILABLECORES_METHODS = "system"` so that
+    `parallelly` ignores `mc.cores` and uses the true detected core
+    count for its hard-limit check.
+2.  Raises `options(mc.cores)` from 1 to the system core count, so that
+    `parallelly`’s soft-limit warning (“only 1 CPU cores available… 200%
+    load”) does not fire with a misleading message after the hard limit
+    has been lifted.
+
+Both adjustments only apply if the user has not set their own values,
+and only inside the wrapper subprocess. The calling session is never
+modified.
 
 ## Current edges and roadmap
 

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">genproc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -93,9 +93,46 @@
         </dt>
         <dd>Block until a non-blocking genproc run has resolved</dd>
       </dl></div><div class="section level2">
+      <h2 id="inspecting-a-result">Inspecting a result<a class="anchor" aria-label="anchor" href="#inspecting-a-result"></a></h2>
+
+      <div class="section-desc"><p>Drill into the log of a completed run, and re-run only the cases that failed.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="errors.html">errors()</a></code>
+
+        </dt>
+        <dd>Subset a genproc result to its failed cases</dd>
+
+        <dt>
+
+          <code><a href="summary.genproc_result.html">summary(<i>&lt;genproc_result&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Summarise a genproc result</dd>
+
+        <dt>
+
+          <code><a href="print.genproc_result_summary.html">print(<i>&lt;genproc_result_summary&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Print method for genproc_result_summary</dd>
+
+        <dt>
+
+          <code><a href="rerun_failed.html">rerun_failed()</a></code>
+
+        </dt>
+        <dd>Re-run only the cases that failed</dd>
+      </dl></div><div class="section level2">
       <h2 id="reproducibility-tooling">Reproducibility tooling<a class="anchor" aria-label="anchor" href="#reproducibility-tooling"></a></h2>
 
-      <div class="section-desc"><p>Compare two runs to detect silent drift of upstream input files.</p></div>
+      <div class="section-desc"><p>Compare two runs to detect silent drift of upstream input files, and re-run only the cases impacted by the drift.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -108,6 +145,13 @@
 
         </dt>
         <dd>Compare input file fingerprints between two genproc runs</dd>
+
+        <dt>
+
+          <code><a href="rerun_affected.html">rerun_affected()</a></code>
+
+        </dt>
+        <dd>Re-run only the cases impacted by an input diff</dd>
       </dl></div><div class="section level2">
       <h2 id="building-blocks">Building blocks<a class="anchor" aria-label="anchor" href="#building-blocks"></a></h2>
 

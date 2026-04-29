@@ -172,6 +172,28 @@ which captures the error message and the real traceback (via
 `withCallingHandlers`). The run continues with the next case. This holds
 identically in sequential and parallel mode.
 
+### Composing parallel and non-blocking
+
+When both `parallel` and `nonblocking` are supplied, the non-blocking
+wrapper envelops the parallel dispatch (one outer future submits the
+run, inner workers process the cases). On platforms where the wrapper
+subprocess R inherits a restrictive default for `getOption("mc.cores")`
+(typically 1 on Windows and in some RStudio configurations),
+`parallelly` would otherwise refuse to spawn the inner workers.
+`genproc()` works around this with two surgical adjustments inside the
+wrapper subprocess, applied *only* in the composed case and *only* when
+the user has not set their own values:
+
+1.  Set `R_PARALLELLY_AVAILABLECORES_METHODS = "system"` so that
+    `availableCores()` ignores the legacy `mc.cores` option and reports
+    the true detected core count (lifts the hard-limit refusal).
+
+2.  Raise `options(mc.cores)` from 1 to the system core count, so that
+    `parallelly`'s soft-limit warning no longer fires with a misleading
+    "only 1 CPU cores available" message.
+
+The calling session is never modified by either adjustment.
+
 ### Case IDs
 
 Each row of the mask receives a `case_id` (currently index-based:
