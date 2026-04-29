@@ -75,17 +75,17 @@ Column order is designed for a human scanning a run:
 ``` r
 result$log
 #>     case_id                              src_dir src_file
-#> 1 case_0001 /tmp/RtmpmeJp3g/genproc-vignette-src    a.csv
-#> 2 case_0002 /tmp/RtmpmeJp3g/genproc-vignette-src    b.csv
-#> 3 case_0003 /tmp/RtmpmeJp3g/genproc-vignette-src    c.csv
+#> 1 case_0001 /tmp/Rtmp8Aie6Z/genproc-vignette-src    a.csv
+#> 2 case_0002 /tmp/Rtmp8Aie6Z/genproc-vignette-src    b.csv
+#> 3 case_0003 /tmp/Rtmp8Aie6Z/genproc-vignette-src    c.csv
 #>                                dst_dir dst_file success error_message traceback
-#> 1 /tmp/RtmpmeJp3g/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
-#> 2 /tmp/RtmpmeJp3g/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
-#> 3 /tmp/RtmpmeJp3g/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
+#> 1 /tmp/Rtmp8Aie6Z/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
+#> 2 /tmp/Rtmp8Aie6Z/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
+#> 3 /tmp/Rtmp8Aie6Z/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
 #>   duration_secs
 #> 1         0.001
 #> 2         0.001
-#> 3         0.000
+#> 3         0.001
 ```
 
 `case_id` is stable and index-based (`case_0001`, `case_0002`, …) for
@@ -97,7 +97,7 @@ of the mask can be reordered between runs.
 ``` r
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 11:49:55"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 15:58:02"
 #>  $ r_version    : chr "R version 4.6.0 (2026-04-24)"
 #>  $ platform     : chr "x86_64-pc-linux-gnu"
 #>  $ os           : chr "Linux 6.17.0-1010-azure"
@@ -171,9 +171,9 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                         path size               mtime
-#> 1 /tmp/RtmpmeJp3g/genproc-vignette-src/a.csv  214 2026-04-29 11:49:55
-#> 2 /tmp/RtmpmeJp3g/genproc-vignette-src/b.csv  296 2026-04-29 11:49:55
-#> 3 /tmp/RtmpmeJp3g/genproc-vignette-src/c.csv  154 2026-04-29 11:49:55
+#> 1 /tmp/Rtmp8Aie6Z/genproc-vignette-src/a.csv  214 2026-04-29 15:58:02
+#> 2 /tmp/Rtmp8Aie6Z/genproc-vignette-src/b.csv  296 2026-04-29 15:58:02
+#> 3 /tmp/Rtmp8Aie6Z/genproc-vignette-src/c.csv  154 2026-04-29 15:58:02
 ```
 
 #### Shared inputs are deduplicated
@@ -236,9 +236,9 @@ diff_inputs(run0, run1)
 #>   Added:     0
 #> 
 #> Changed files:
-#>   /tmp/RtmpmeJp3g/genproc-vignette-src/a.csv
+#>   /tmp/Rtmp8Aie6Z/genproc-vignette-src/a.csv
 #>       size:  214 B -> 3.9 KB
-#>       mtime: 2026-04-29 11:49:55 -> 2026-04-29 11:49:56
+#>       mtime: 2026-04-29 15:58:02 -> 2026-04-29 15:58:02
 ```
 
 [`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
@@ -262,7 +262,7 @@ file.remove(file.path(src_dir, "b.csv"))
 #> [1] TRUE
 result_broken <- genproc(convert, mask)
 #> Warning in file(file, "rt"): cannot open file
-#> '/tmp/RtmpmeJp3g/genproc-vignette-src/b.csv': No such file or directory
+#> '/tmp/Rtmp8Aie6Z/genproc-vignette-src/b.csv': No such file or directory
 
 result_broken$n_success
 #> [1] 2
@@ -325,10 +325,10 @@ example <- expression({
 fn <- from_example_to_function(example)
 formals(fn)
 #> $param_1
-#> [1] "/tmp/RtmpmeJp3g/genproc-vignette-src/a.csv"
+#> [1] "/tmp/Rtmp8Aie6Z/genproc-vignette-src/a.csv"
 #> 
 #> $param_2
-#> [1] "/tmp/RtmpmeJp3g/genproc-vignette-dst/a-from-example.rds"
+#> [1] "/tmp/Rtmp8Aie6Z/genproc-vignette-dst/a-from-example.rds"
 ```
 
 ### 2. `from_function_to_mask()` — function signature to mask template
@@ -342,9 +342,9 @@ full mask.
 mask_template <- from_function_to_mask(fn)
 mask_template
 #>                                      param_1
-#> 1 /tmp/RtmpmeJp3g/genproc-vignette-src/a.csv
+#> 1 /tmp/Rtmp8Aie6Z/genproc-vignette-src/a.csv
 #>                                                   param_2
-#> 1 /tmp/RtmpmeJp3g/genproc-vignette-dst/a-from-example.rds
+#> 1 /tmp/Rtmp8Aie6Z/genproc-vignette-dst/a-from-example.rds
 ```
 
 ### 3. `rename_function_params()` — give the parameters domain names
@@ -359,10 +359,10 @@ fn_named <- rename_function_params(
 )
 formals(fn_named)
 #> $input_path
-#> [1] "/tmp/RtmpmeJp3g/genproc-vignette-src/a.csv"
+#> [1] "/tmp/Rtmp8Aie6Z/genproc-vignette-src/a.csv"
 #> 
 #> $output_path
-#> [1] "/tmp/RtmpmeJp3g/genproc-vignette-dst/a-from-example.rds"
+#> [1] "/tmp/Rtmp8Aie6Z/genproc-vignette-dst/a-from-example.rds"
 ```
 
 Putting it together: a renamed function plus a manually-built mask that

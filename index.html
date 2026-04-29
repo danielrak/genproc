@@ -114,7 +114,7 @@
 <span><span class="co">#&gt; genproc result</span></span>
 <span><span class="co">#&gt;   Status : done </span></span>
 <span><span class="co">#&gt;   Cases  : 3 ( 3 ok, 0 error )</span></span>
-<span><span class="co">#&gt;   Duration: 0.04 secs</span></span></code></pre></div>
+<span><span class="co">#&gt;   Duration: 0.06 secs</span></span></code></pre></div>
 <p>The <code>log</code> data.frame holds one row per case, with <code>case_id</code>, the mask parameter values (<code>src_dir</code>, <code>src_file</code>, <code>dst_dir</code>, <code>dst_file</code> here), then <code>success</code>, <code>error_message</code>, <code>traceback</code>, and <code>duration_secs</code>. Below we display a subset of those columns for readability — <code>error_message</code> and <code>traceback</code> are <code>NA</code> on this happy path:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span><span class="op">$</span><span class="va">log</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"case_id"</span>, <span class="st">"src_file"</span>, <span class="st">"dst_file"</span>,</span>
@@ -130,7 +130,7 @@
 <span></span>
 <span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask_with_missing</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in file(file, "rt"): cannot open file</span></span>
-<span><span class="co">#&gt; 'C:\Users\rheri\AppData\Local\Temp\RtmpItQsr6/src/does_not_exist.csv': No such</span></span>
+<span><span class="co">#&gt; 'C:\Users\rheri\AppData\Local\Temp\RtmpS2TaF4/src/does_not_exist.csv': No such</span></span>
 <span><span class="co">#&gt; file or directory</span></span>
 <span><span class="va">result2</span><span class="op">$</span><span class="va">log</span><span class="op">[</span><span class="op">!</span><span class="va">result2</span><span class="op">$</span><span class="va">log</span><span class="op">$</span><span class="va">success</span>,</span>
 <span>            <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"case_id"</span>, <span class="st">"src_file"</span>, <span class="st">"error_message"</span><span class="op">)</span><span class="op">]</span></span>
@@ -149,7 +149,7 @@
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">reproducibility</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 11</span></span>
-<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-29 13:39:58"</span></span>
+<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-04-29 17:55:37"</span></span>
 <span><span class="co">#&gt;  $ r_version    : chr "R version 4.5.1 (2025-06-13 ucrt)"</span></span>
 <span><span class="co">#&gt;  $ platform     : chr "x86_64-w64-mingw32"</span></span>
 <span><span class="co">#&gt;  $ os           : chr "Windows 10 x64"</span></span>
@@ -182,13 +182,13 @@
 <span><span class="va">run0</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">do_one</span>, <span class="va">mask_paths</span><span class="op">)</span></span>
 <span><span class="va">run0</span><span class="op">$</span><span class="va">reproducibility</span><span class="op">$</span><span class="va">inputs</span><span class="op">$</span><span class="va">files</span></span>
 <span><span class="co">#&gt;                                                     path size</span></span>
-<span><span class="co">#&gt; 1 C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/a.csv  221</span></span>
-<span><span class="co">#&gt; 2 C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/b.csv  303</span></span>
-<span><span class="co">#&gt; 3 C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/c.csv  161</span></span>
+<span><span class="co">#&gt; 1 C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/a.csv  221</span></span>
+<span><span class="co">#&gt; 2 C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/b.csv  303</span></span>
+<span><span class="co">#&gt; 3 C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/c.csv  161</span></span>
 <span><span class="co">#&gt;                 mtime</span></span>
-<span><span class="co">#&gt; 1 2026-04-29 13:39:58</span></span>
-<span><span class="co">#&gt; 2 2026-04-29 13:39:58</span></span>
-<span><span class="co">#&gt; 3 2026-04-29 13:39:58</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 2026-04-29 17:55:37</span></span>
+<span><span class="co">#&gt; 2 2026-04-29 17:55:37</span></span>
+<span><span class="co">#&gt; 3 2026-04-29 17:55:37</span></span></code></pre></div>
 <p><code><a href="reference/diff_inputs.html">diff_inputs()</a></code> compares two runs and tells you which referenced files have changed since the first one:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Rewrite a.csv with strictly more content (size changes)</span></span>
@@ -203,9 +203,9 @@
 <span><span class="co">#&gt;   Added:     0</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Changed files:</span></span>
-<span><span class="co">#&gt;   C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/a.csv</span></span>
+<span><span class="co">#&gt;   C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/a.csv</span></span>
 <span><span class="co">#&gt;       size:  221 B -&gt; 4.1 KB</span></span>
-<span><span class="co">#&gt;       mtime: 2026-04-29 13:39:58 -&gt; 2026-04-29 13:39:58</span></span></code></pre></div>
+<span><span class="co">#&gt;       mtime: 2026-04-29 17:55:37 -&gt; 2026-04-29 17:55:37</span></span></code></pre></div>
 <p>The default method is <code>"stat"</code> (size + mtime). It detects every legitimate modification at near-zero cost; a content-hash variant is on the roadmap for stronger guarantees on adversarial workloads.</p>
 </div>
 <div class="section level2">

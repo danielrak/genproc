@@ -96,7 +96,7 @@ diff_inputs(r0, r1)
 #>   Added:     0
 #> 
 #> Changed files:
-#>   /tmp/RtmpZOjlkM/diff-inputs-demo/a.csv
+#>   /tmp/RtmpLpm5wN/diff-inputs-demo/a.csv
 #>       size:  214 B -> 3.9 KB
-#>       mtime: 2026-04-29 11:49:52 -> 2026-04-29 11:49:52
+#>       mtime: 2026-04-29 15:57:58 -> 2026-04-29 15:57:58
 ```
