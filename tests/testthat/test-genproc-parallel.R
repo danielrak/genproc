@@ -93,11 +93,14 @@ test_that("sequential run: reproducibility$parallel is NULL", {
 })
 
 test_that("parallel run: reproducibility$parallel records the spec", {
+  # We use "stats" (base R) rather than a Suggests package so this test
+  # also passes under R CMD check --no-suggests / rhub nosuggests:
+  # the worker library() call requires the package to actually exist.
   spec <- parallel_spec(workers = 2,
                         strategy = "sequential",
                         chunk_size = 1L,
                         seed = 42L,
-                        packages = "dplyr")
+                        packages = "stats")
   result <- genproc(function(x) x, data.frame(x = c(1, 2)),
                     parallel = spec)
 
@@ -107,7 +110,7 @@ test_that("parallel run: reproducibility$parallel records the spec", {
   expect_equal(p$workers,    2L)
   expect_equal(p$chunk_size, 1L)
   expect_equal(p$seed,       42L)
-  expect_equal(p$packages,   "dplyr")
+  expect_equal(p$packages,   "stats")
 })
 
 

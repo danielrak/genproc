@@ -118,8 +118,11 @@ test_that("sync run: reproducibility$nonblocking is NULL", {
 })
 
 test_that("non-blocking run: reproducibility$nonblocking records the spec", {
+  # We use "stats" (base R) rather than a Suggests package so this test
+  # also passes under R CMD check --no-suggests / rhub nosuggests:
+  # the worker library() call requires the package to actually exist.
   spec <- nonblocking_spec(strategy = "sequential",
-                           packages = "dplyr")
+                           packages = "stats")
   result <- genproc(function(x) x, data.frame(x = c(1, 2)),
                     nonblocking = spec)
   result <- await(result)
@@ -127,7 +130,7 @@ test_that("non-blocking run: reproducibility$nonblocking records the spec", {
   nb <- result$reproducibility$nonblocking
   expect_false(is.null(nb))
   expect_equal(nb$strategy, "sequential")
-  expect_equal(nb$packages, "dplyr")
+  expect_equal(nb$packages, "stats")
 })
 
 

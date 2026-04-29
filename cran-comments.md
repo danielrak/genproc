@@ -35,6 +35,14 @@
   worker library() call requires it), which is the standard
   pattern for development-mode `devtools::test()`. Inside a CRAN
   check the package *is* installed, so these tests run.
+* The vignette `vignettes/genproc.Rmd` uses
+  `output: rmarkdown::html_vignette` and therefore requires
+  `rmarkdown` (declared in Suggests, with `VignetteBuilder: knitr`)
+  to rebuild. CRAN's default check installs Suggests so the
+  vignette rebuilds cleanly. The R-hub `nosuggests` job, which
+  intentionally drops Suggests, will fail to rebuild the vignette
+  with "there is no package called 'rmarkdown'" — this is expected
+  and not a regression of the package itself.
 
 ## Reverse dependencies
 
