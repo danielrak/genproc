@@ -25,4 +25,13 @@ field, which is frozen at the moment the skeleton is created. This
 way, repeated \code{print(x)} calls reflect the actual progress of the
 background run. Numeric fields stay \code{(pending)} until \code{\link[=await]{await()}} is
 called to materialize the result.
+
+When the parallel layer was used and startup overhead clearly
+dominated the run, the print method emits a \code{Note} hinting at
+the issue — a pattern that often surprises users on small
+workloads. Two metrics depending on whether \code{workers} is known:
+parallel efficiency (\code{(cumulative / workers) / wall}) below 50\%
+when \code{workers} is supplied, or \code{wall > cumulative * 1.2} in
+power-user mode (workers unknown). Both require \verb{wall > 0.5s} to
+avoid noise on very short runs.
 }
