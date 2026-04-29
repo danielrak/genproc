@@ -15,15 +15,28 @@ status(x, ...)
 \item{...}{Unused, for future extensions.}
 }
 \value{
-A single character string.
+A single character string: \code{"running"}, \code{"done"}, or
+\code{"error"}.
 }
 \description{
 \code{status()} is a non-blocking S3 generic. On a \code{genproc_result},
-it returns \code{"running"} while a background future is unresolved,
-and \code{"done"} once it has resolved (or if the object is already
-synchronous-done). It does \emph{not} materialize the result — use
-\code{\link[=await]{await()}} for that. If you want to know whether the wrapper
-future itself crashed, you must call \code{\link[=await]{await()}}.
+it returns one of:
+\itemize{
+\item \code{"running"} — the underlying future is not yet resolved.
+\item \code{"done"} — the future has resolved successfully (the
+result is ready to be collected via \code{\link[=await]{await()}}).
+\item \code{"error"} — the wrapper future itself crashed. Call
+\code{\link[=await]{await()}} to retrieve the error message.
+}
+}
+\details{
+For a synchronous (non-\code{nonblocking}) result, \code{status()} simply
+returns \code{result$status} (\code{"done"} or \code{"error"}).
+
+\code{status()} peeks at the resolved future via \code{future::value()}
+inside a \code{tryCatch}. Because \code{value()} consumes the future, the
+peek result is cached in a shared environment so that a
+subsequent \code{\link[=await]{await()}} does not re-materialize it.
 }
 \seealso{
 \code{\link[=await]{await()}}, \code{\link[=nonblocking_spec]{nonblocking_spec()}}

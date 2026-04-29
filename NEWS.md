@@ -36,6 +36,22 @@
 
 ## UX improvements
 
+* `status()` now distinguishes `"done"` (the wrapper future
+  resolved successfully) from `"error"` (the wrapper crashed),
+  even before [await()] is called. Previously `status()` returned
+  `"done"` as soon as the future was resolved, regardless of
+  outcome — leading to the misleading
+  `Status: done (not collected)` print on a job that had actually
+  failed. The peek result is cached in a shared environment so
+  that a subsequent `await()` does not re-materialize the future.
+* `print(result)` is more informative: a `Started` line shows the
+  run's timestamp, a `Mode` line summarises the execution
+  configuration (`sequential`, `multisession parallel (4 workers)`,
+  `non-blocking + multisession parallel (6 workers)`, etc.), and
+  the method emits `errors(x)` / `summary(x)` hints when failures
+  occurred. The non-blocking print also distinguishes
+  `done (not collected)` from `error (not collected)`.
+
 * When `parallel` was used but startup overhead clearly dominated
   the run, `print(result)` now emits a `Note` warning. Two
   metrics: parallel efficiency below 50% when `workers` is

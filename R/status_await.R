@@ -2,27 +2,53 @@
 #
 # A non-blocking run returns a `genproc_result` skeleton immediately,
 # with `status = "running"` and the underlying future stored in
-# `attr(x, "future")`. `status()` is a cheap, non-blocking query of
-# the future's state. `await()` blocks until the future resolves and
-# splices the materialized fields back into the result.
+# `attr(x, "future")`. `status()` is a cheap query of the future's
+# state. `await()` blocks until the future resolves and splices the
+# materialized fields back into the result.
 #
 # Both are idempotent on already-resolved objects so user code can
 # safely call them multiple times.
+#
+# === status() distinguishes done from error ===
+#
+# `future::resolved(f)` only tells us "the future has finished",
+# not whether it succeeded or threw. To distinguish the two, we
+# call `future::value(f)` inside a tryCatch. The catch is that
+# `value()` consumes the future: a subsequent call would fail.
+# We solve this with a shared environment (attribute
+# `shared_env`) attached to the skeleton at creation time. When
+# `status()` peeks, it stores the result (or a captured error
+# object) in this env. `await()` then prefers the cached result
+# over a fresh call to `value()`. The shared env is a regular R
+# environment, hence reference-mutated even though `x` is
+# pass-by-value.
 
 
 #' Query the status of a genproc run without blocking
 #'
 #' `status()` is a non-blocking S3 generic. On a `genproc_result`,
-#' it returns `"running"` while a background future is unresolved,
-#' and `"done"` once it has resolved (or if the object is already
-#' synchronous-done). It does *not* materialize the result — use
-#' [await()] for that. If you want to know whether the wrapper
-#' future itself crashed, you must call [await()].
+#' it returns one of:
+#' \itemize{
+#'   \item `"running"` — the underlying future is not yet resolved.
+#'   \item `"done"` — the future has resolved successfully (the
+#'     result is ready to be collected via [await()]).
+#'   \item `"error"` — the wrapper future itself crashed. Call
+#'     [await()] to retrieve the error message.
+#' }
+#'
+#' For a synchronous (non-`nonblocking`) result, `status()` simply
+#' returns `result$status` (`"done"` or `"error"`).
+#'
+#' `status()` peeks at the resolved future via `future::value()`
+#' inside a `tryCatch`. Because `value()` consumes the future, the
+#' peek result is cached in a shared environment so that a
+#' subsequent [await()] does not re-materialize it.
 #'
 #' @param x An object. Methods exist for `genproc_result`.
 #' @param ... Unused, for future extensions.
 #'
-#' @return A single character string.
+#' @return A single character string: `"running"`, `"done"`, or
+#'   `"error"`.
 #'
 #' @seealso [await()], [nonblocking_spec()]
 #' @export
@@ -37,10 +63,40 @@ status.genproc_result <- function(x, ...) {
   if (is.null(f)) {
     return(x$status)
   }
-  if (future::resolved(f)) {
-    return("done")
+
+  shared <- attr(x, "shared_env")
+
+  # If a previous status() call has already peeked the resolved
+  # future, return the cached classification.
+  if (!is.null(shared) && exists("peek_state", envir = shared)) {
+    return(shared$peek_state)
   }
-  "running"
+
+  if (!future::resolved(f)) {
+    return("running")
+  }
+
+  # Future is resolved. Peek to distinguish done from error.
+  # tryCatch() makes this safe; the captured value (or error) is
+  # cached so await() can re-use it without re-materializing.
+  result <- tryCatch(
+    future::value(f),
+    error = function(e) {
+      structure(
+        list(message = conditionMessage(e)),
+        class = "genproc_wrapper_error"
+      )
+    }
+  )
+
+  state <- if (inherits(result, "genproc_wrapper_error")) "error" else "done"
+
+  if (!is.null(shared)) {
+    shared$peek_state  <- state
+    shared$peek_result <- result
+  }
+
+  state
 }
 
 
@@ -79,16 +135,23 @@ await.genproc_result <- function(x, ...) {
     return(x)
   }
 
-  # Block on the wrapper future.
-  materialized <- tryCatch(
-    future::value(f),
-    error = function(e) {
-      structure(
-        list(message = conditionMessage(e)),
-        class = "genproc_wrapper_error"
-      )
-    }
-  )
+  shared <- attr(x, "shared_env")
+
+  # If a previous status() call has already peeked, reuse the
+  # cached result. Otherwise materialize the future ourselves.
+  if (!is.null(shared) && exists("peek_result", envir = shared)) {
+    materialized <- shared$peek_result
+  } else {
+    materialized <- tryCatch(
+      future::value(f),
+      error = function(e) {
+        structure(
+          list(message = conditionMessage(e)),
+          class = "genproc_wrapper_error"
+        )
+      }
+    )
+  }
 
   # Once the future is collected, we can safely restore the previous
   # plan (if genproc() installed one for this run). We do this here,

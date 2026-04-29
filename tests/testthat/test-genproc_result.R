@@ -52,7 +52,7 @@ test_that("print displays Status, Cases, Duration", {
   expect_match(out, "genproc result")
   expect_match(out, "Status\\s*:")
   expect_match(out, "Cases\\s*:")
-  expect_match(out, "Duration:")
+  expect_match(out, "Duration\\s*:")
 })
 
 test_that("print returns its argument invisibly", {
@@ -133,4 +133,75 @@ test_that("F12 fallback metric does NOT fire on a marginal slowdown (< 1.2x)", {
   )
   out <- paste(capture.output(print(r)), collapse = "\n")
   expect_false(grepl("parallel startup dominated", out))
+})
+
+
+# === F5: enriched print fields ===============================================
+
+# Helper: build a result with a fully-populated reproducibility snapshot.
+mock_result_with_repro <- function(parallel = NULL, nonblocking = NULL,
+                                    wall = 0.1) {
+  r <- mock_result(parallel = parallel, wall = wall)
+  r$reproducibility$timestamp   <- as.POSIXct("2026-04-29 12:34:56",
+                                                tz = "UTC")
+  r$reproducibility$nonblocking <- nonblocking
+  r
+}
+
+
+test_that("print includes a Started timestamp from the repro snapshot", {
+  r <- mock_result_with_repro()
+  out <- paste(capture.output(print(r)), collapse = "\n")
+  expect_match(out, "Started")
+  # Timestamp formatted ISO-ish (locale-tolerant).
+  expect_match(out, "2026-04-29")
+})
+
+test_that("print Mode line shows 'sequential' on a sequential run", {
+  r <- mock_result_with_repro()
+  out <- paste(capture.output(print(r)), collapse = "\n")
+  expect_match(out, "Mode\\s*:\\s*sequential")
+})
+
+test_that("print Mode line shows worker count when parallel was used", {
+  r <- mock_result_with_repro(
+    parallel = list(strategy = "multisession", workers = 4L)
+  )
+  out <- paste(capture.output(print(r)), collapse = "\n")
+  expect_match(out, "Mode\\s*:")
+  expect_match(out, "parallel")
+  expect_match(out, "4 workers")
+})
+
+test_that("print Mode line composes non-blocking + parallel", {
+  r <- mock_result_with_repro(
+    parallel    = list(strategy = "multisession", workers = 6L),
+    nonblocking = list(strategy = "multisession")
+  )
+  out <- paste(capture.output(print(r)), collapse = "\n")
+  expect_match(out, "non-blocking \\+ ")
+  expect_match(out, "6 workers")
+})
+
+test_that("print emits an errors()/summary() hint when there are failures", {
+  r <- mock_result_with_repro()
+  r$n_error   <- 2L
+  r$n_success <- 0L
+  r$log <- data.frame(
+    case_id       = c("case_0001", "case_0002"),
+    success       = c(FALSE, FALSE),
+    error_message = c("a", "b"),
+    traceback     = c("x", "y"),
+    duration_secs = c(0.01, 0.01),
+    stringsAsFactors = FALSE
+  )
+  out <- paste(capture.output(print(r)), collapse = "\n")
+  expect_match(out, "errors\\(")
+  expect_match(out, "summary\\(")
+})
+
+test_that("print does NOT emit the errors() hint on a fully-successful run", {
+  r <- mock_result_with_repro()
+  out <- paste(capture.output(print(r)), collapse = "\n")
+  expect_false(grepl("errors\\(", out))
 })

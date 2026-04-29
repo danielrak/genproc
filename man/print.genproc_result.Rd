@@ -15,16 +15,18 @@
 \code{x}, invisibly.
 }
 \description{
-Displays a concise summary of the run: number of cases, success
-rate, total duration, and status.
+Displays a structured summary of the run: status, timestamp,
+execution mode, case counts, total duration, and an actionable
+hint when relevant.
 }
 \details{
 For non-blocking results, the status is queried \emph{live} from the
-attached future (via \code{\link[=status]{status()}}) rather than read from the stored
-field, which is frozen at the moment the skeleton is created. This
-way, repeated \code{print(x)} calls reflect the actual progress of the
-background run. Numeric fields stay \code{(pending)} until \code{\link[=await]{await()}} is
-called to materialize the result.
+attached future via \code{\link[=status]{status()}} rather than read from the stored
+field. Repeated \code{print(x)} calls therefore reflect the actual
+progress of the background run. \code{status()} distinguishes
+\code{"done"} (the future resolved successfully) from \code{"error"} (the
+wrapper future itself crashed). Numeric fields stay \code{(pending)}
+until \code{\link[=await]{await()}} is called to materialize the result.
 
 When the parallel layer was used and startup overhead clearly
 dominated the run, the print method emits a \code{Note} hinting at

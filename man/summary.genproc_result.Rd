@@ -25,7 +25,7 @@ In that case the other fields are \code{NA}.}
 \item{status}{Character, mirrors \code{result$status}.}
 \item{n_cases}{Integer.}
 \item{n_success, n_error}{Integers.}
-\item{success_rate}{Numeric in \link{0, 1}.}
+\item{success_rate}{Numeric in 0..1.}
 \item{duration_total_secs}{Numeric, wall-clock total.}
 \item{duration_stats}{List with \code{total}, \code{mean}, \code{max},
 and \code{slowest_case_id}. \code{NULL} if no per-case durations.}

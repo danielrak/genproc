@@ -18,6 +18,8 @@
 # === Helpers ==================================================================
 
 # Build a "running" skeleton around an already-constructed future.
+# The shared_env mirrors what genproc() attaches in the real path —
+# it lets status() and await() coordinate the peek cache.
 make_skeleton_with_future <- function(f) {
   skel <- structure(
     list(
@@ -30,7 +32,8 @@ make_skeleton_with_future <- function(f) {
     ),
     class = "genproc_result"
   )
-  attr(skel, "future") <- f
+  attr(skel, "future")     <- f
+  attr(skel, "shared_env") <- new.env(parent = emptyenv())
   skel
 }
 
@@ -177,4 +180,101 @@ test_that("await() returns an object that still inherits genproc_result", {
   x <- make_skeleton_with_future(f)
   y <- await(x)
   expect_s3_class(y, "genproc_result")
+})
+
+
+# === F14: status() distinguishes done from error ============================
+
+test_that("status() returns 'error' on a future that has crashed", {
+  oplan <- future::plan(future::sequential)
+  on.exit(future::plan(oplan), add = TRUE)
+
+  f <- future::future(stop("wrapper crashed"), seed = TRUE)
+  x <- make_skeleton_with_future(f)
+
+  # Resolve the future implicitly by waiting (sequential resolves
+  # at creation, but we can be defensive).
+  expect_equal(status(x), "error")
+})
+
+test_that("status() returns 'done' on a successful resolved future", {
+  oplan <- future::plan(future::sequential)
+  on.exit(future::plan(oplan), add = TRUE)
+
+  f <- future::future(list(log = data.frame(a = 1), n_success = 1L,
+                           n_error = 0L, duration_total_secs = 0.01),
+                      seed = TRUE)
+  x <- make_skeleton_with_future(f)
+  expect_equal(status(x), "done")
+})
+
+test_that("status() peek caches the result; await() then reuses the cache", {
+  oplan <- future::plan(future::sequential)
+  on.exit(future::plan(oplan), add = TRUE)
+
+  payload <- list(log = data.frame(a = 1), n_success = 1L,
+                  n_error = 0L, duration_total_secs = 0.01)
+  f <- future::future(payload, seed = TRUE)
+  x <- make_skeleton_with_future(f)
+
+  # Peek via status(): should populate the shared cache.
+  state <- status(x)
+  expect_equal(state, "done")
+  shared <- attr(x, "shared_env")
+  expect_true(exists("peek_result", envir = shared))
+
+  # Await consumes from the cache without re-calling future::value().
+  y <- await(x)
+  expect_equal(y$status, "done")
+  expect_equal(y$n_success, 1L)
+})
+
+test_that("status() peek caches errors; await() reports them as 'error'", {
+  oplan <- future::plan(future::sequential)
+  on.exit(future::plan(oplan), add = TRUE)
+
+  f <- future::future(stop("wrapper crashed"), seed = TRUE)
+  x <- make_skeleton_with_future(f)
+
+  # status() reports "error" and caches the wrapper error.
+  expect_equal(status(x), "error")
+  shared <- attr(x, "shared_env")
+  expect_true(exists("peek_result", envir = shared))
+
+  # await() reads from the cache and returns x with status = "error"
+  # plus a populated error_message.
+  y <- await(x)
+  expect_equal(y$status, "error")
+  expect_true(grepl("wrapper crashed", y$error_message))
+})
+
+test_that("multiple status() calls are idempotent and cheap (no re-peek)", {
+  oplan <- future::plan(future::sequential)
+  on.exit(future::plan(oplan), add = TRUE)
+
+  payload <- list(log = data.frame(a = 1), n_success = 1L,
+                  n_error = 0L, duration_total_secs = 0.01)
+  f <- future::future(payload, seed = TRUE)
+  x <- make_skeleton_with_future(f)
+
+  s1 <- status(x)
+  s2 <- status(x)
+  s3 <- status(x)
+  expect_equal(s1, "done")
+  expect_equal(s2, "done")
+  expect_equal(s3, "done")
+})
+
+test_that("status() falls back to x$status post-await", {
+  # Once await() has finalized the result, the future is gone but
+  # status() should still return the right terminal state.
+  oplan <- future::plan(future::sequential)
+  on.exit(future::plan(oplan), add = TRUE)
+
+  f <- future::future(list(log = data.frame(a = 1), n_success = 1L,
+                           n_error = 0L, duration_total_secs = 0.01),
+                      seed = TRUE)
+  x <- make_skeleton_with_future(f)
+  y <- await(x)
+  expect_equal(status(y), "done")
 })

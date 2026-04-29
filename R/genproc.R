@@ -399,6 +399,13 @@ genproc <- function(f, mask, f_mapping = NULL, parallel = NULL,
   # oplan is NULL if no strategy was installed (power-user mode):
   # await() will see NULL and skip the plan restoration step.
   attr(skeleton, "oplan")  <- oplan
+  # Shared environment between status() and await(). If status()
+  # peeks the resolved future, it caches the result (or wrapper
+  # error) here; await() then consumes from the cache instead of
+  # calling future::value() a second time. Pass-by-reference
+  # semantics of `environment` are exactly what we need for the
+  # cross-call coordination R's pass-by-value would otherwise break.
+  attr(skeleton, "shared_env") <- new.env(parent = emptyenv())
   skeleton
 }
 
