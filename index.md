@@ -78,20 +78,30 @@ mask <- data.frame(
 result <- genproc(convert, mask)
 ```
 
-Every run returns a `genproc_result`. The `log` data.frame holds one row
-per case, with `case_id`, the mask parameter values (`src_dir`,
-`src_file`, `dst_dir`, `dst_file` here), then `success`,
-`error_message`, `traceback`, and `duration_secs`. Below we display a
-subset of those columns for readability — `error_message` and
-`traceback` are `NA` on this happy path:
+Every run returns a `genproc_result` — a structured list with a stable
+shape across runs:
+
+``` r
+result
+#> genproc result
+#>   Status : done 
+#>   Cases  : 3 ( 3 ok, 0 error )
+#>   Duration: 0.04 secs
+```
+
+The `log` data.frame holds one row per case, with `case_id`, the mask
+parameter values (`src_dir`, `src_file`, `dst_dir`, `dst_file` here),
+then `success`, `error_message`, `traceback`, and `duration_secs`. Below
+we display a subset of those columns for readability — `error_message`
+and `traceback` are `NA` on this happy path:
 
 ``` r
 result$log[, c("case_id", "src_file", "dst_file",
                "success", "duration_secs")]
 #>     case_id src_file dst_file success duration_secs
-#> 1 case_0001    a.csv    a.rds    TRUE             0
-#> 2 case_0002    b.csv    b.rds    TRUE             0
-#> 3 case_0003    c.csv    c.rds    TRUE             0
+#> 1 case_0001    a.csv    a.rds    TRUE          0.00
+#> 2 case_0002    b.csv    b.rds    TRUE          0.02
+#> 3 case_0003    c.csv    c.rds    TRUE          0.00
 ```
 
 If a case fails, the run continues — the error is captured, not thrown.
@@ -105,7 +115,7 @@ mask_with_missing$src_file[2] <- "does_not_exist.csv"
 
 result2 <- genproc(convert, mask_with_missing)
 #> Warning in file(file, "rt"): cannot open file
-#> 'C:\Users\rheri\AppData\Local\Temp\RtmpsrBmc8/src/does_not_exist.csv': No such
+#> 'C:\Users\rheri\AppData\Local\Temp\RtmpItQsr6/src/does_not_exist.csv': No such
 #> file or directory
 result2$log[!result2$log$success,
             c("case_id", "src_file", "error_message")]
@@ -132,7 +142,7 @@ sync:
 ``` r
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 12:26:01"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 13:39:58"
 #>  $ r_version    : chr "R version 4.5.1 (2025-06-13 ucrt)"
 #>  $ platform     : chr "x86_64-w64-mingw32"
 #>  $ os           : chr "Windows 10 x64"
@@ -144,6 +154,14 @@ str(result$reproducibility, max.level = 1)
 #>  $ parallel     : NULL
 #>  $ nonblocking  : NULL
 #>  $ inputs       :List of 3
+```
+
+A taste of what is captured (first few package versions):
+
+``` r
+head(result$reproducibility$packages, 5)
+#>  genproc compiler  fastmap      cli    tools 
+#>  "0.1.0"  "4.5.1"  "1.2.0"  "3.6.5"  "4.5.1"
 ```
 
 ## Detecting silent input drift
@@ -169,13 +187,13 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                                     path size
-#> 1 C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/a.csv  221
-#> 2 C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/b.csv  303
-#> 3 C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/c.csv  161
+#> 1 C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/a.csv  221
+#> 2 C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/b.csv  303
+#> 3 C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/c.csv  161
 #>                 mtime
-#> 1 2026-04-29 12:26:01
-#> 2 2026-04-29 12:26:01
-#> 3 2026-04-29 12:26:01
+#> 1 2026-04-29 13:39:58
+#> 2 2026-04-29 13:39:58
+#> 3 2026-04-29 13:39:58
 ```
 
 [`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
@@ -195,9 +213,9 @@ diff_inputs(run0, run1)
 #>   Added:     0
 #> 
 #> Changed files:
-#>   C:/Users/rheri/AppData/Local/Temp/RtmpsrBmc8/src/a.csv
+#>   C:/Users/rheri/AppData/Local/Temp/RtmpItQsr6/src/a.csv
 #>       size:  221 B -> 4.1 KB
-#>       mtime: 2026-04-29 12:26:01 -> 2026-04-29 12:26:01
+#>       mtime: 2026-04-29 13:39:58 -> 2026-04-29 13:39:58
 ```
 
 The default method is `"stat"` (size + mtime). It detects every
@@ -261,8 +279,14 @@ job <- genproc(
 
 ## Status
 
-Early development. The public API is not stable yet. The package is not
-on CRAN.
+Lifecycle: **experimental**. The four execution layers (logged,
+reproducibility, parallel, non-blocking) and the `genproc_result`
+contract are committed to forward compatibility across the 0.x series —
+existing fields are guaranteed not to be removed or renamed. New fields
+and new optional layers may be added.
+
+The 0.1.0 release is the first public submission and is not yet on CRAN.
+Install from GitHub for now (see above).
 
 ## Learn more
 

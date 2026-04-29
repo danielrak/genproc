@@ -66,13 +66,17 @@ guaranteed forward-compatible across the 0.x series.
 ### Building blocks
 
 - [`from_example_to_function()`](https://danielrak.github.io/genproc/reference/from_example_to_function.md):
-  transform an example expression into a parameterized function (modular
-  AST rewrite engine, no rlang dependency).
+  turn an example expression that works for one case into a
+  parameterized function. String literals and free symbols become
+  parameters with the original value as default. Built on a
+  dependency-free AST rewriter.
 - [`from_function_to_mask()`](https://danielrak.github.io/genproc/reference/from_function_to_mask.md):
-  derive a one-row template mask (`data.frame`) from a function’s
-  signature.
+  derive a one-row template `data.frame` from a function’s signature,
+  ready to be expanded into a full iteration mask.
 - [`rename_function_params()`](https://danielrak.github.io/genproc/reference/rename_function_params.md):
-  rename parameters in formals and body.
+  rename parameters in formals and body in one pass, without editing the
+  function source.
 - [`add_trycatch_logrow()`](https://danielrak.github.io/genproc/reference/add_trycatch_logrow.md):
-  the low-level logging wrapper used by
-  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md).
+  the standalone logging wrapper used by
+  [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md),
+  exposed for users who want the logged layer outside the full pipeline.

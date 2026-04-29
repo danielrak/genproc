@@ -33,9 +33,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="all-functions">All functions<a class="anchor" aria-label="anchor" href="#all-functions"></a></h2>
+      <h2 id="run-an-iteration">Run an iteration<a class="anchor" aria-label="anchor" href="#run-an-iteration"></a></h2>
 
-
+      <div class="section-desc"><p>The central entry point. Wraps a function and a mask with the two mandatory layers (logged + reproducibility) and exposes the optional ones.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -44,10 +44,47 @@
 
       <dl><dt>
 
-          <code><a href="add_trycatch_logrow.html">add_trycatch_logrow()</a></code>
+          <code><a href="genproc.html">genproc()</a></code>
 
         </dt>
-        <dd>Wrap a function with error handling and a structured log row</dd>
+        <dd>Run a function over a mask with mandatory logging and reproducibility</dd>
+
+        <dt>
+
+          <code><a href="print.genproc_result.html">print(<i>&lt;genproc_result&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Print a genproc result</dd>
+      </dl></div><div class="section level2">
+      <h2 id="optional-execution-layers">Optional execution layers<a class="anchor" aria-label="anchor" href="#optional-execution-layers"></a></h2>
+
+      <div class="section-desc"><p>Composable specs passed to <code><a href="../reference/genproc.html">genproc()</a></code>. Parallel dispatches cases across workers via the future ecosystem. Non-blocking returns immediately and lets you collect the result later.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="parallel_spec.html">parallel_spec()</a></code>
+
+        </dt>
+        <dd>Specify a parallel execution strategy for genproc()</dd>
+
+        <dt>
+
+          <code><a href="nonblocking_spec.html">nonblocking_spec()</a></code>
+
+        </dt>
+        <dd>Specify a non-blocking execution strategy for genproc()</dd>
+
+        <dt>
+
+          <code><a href="status.html">status()</a></code>
+
+        </dt>
+        <dd>Query the status of a genproc run without blocking</dd>
 
         <dt>
 
@@ -55,15 +92,33 @@
 
         </dt>
         <dd>Block until a non-blocking genproc run has resolved</dd>
+      </dl></div><div class="section level2">
+      <h2 id="reproducibility-tooling">Reproducibility tooling<a class="anchor" aria-label="anchor" href="#reproducibility-tooling"></a></h2>
 
-        <dt>
+      <div class="section-desc"><p>Compare two runs to detect silent drift of upstream input files.</p></div>
 
-          <code><a href="diff_inputs.html">diff_inputs()</a></code>
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="diff_inputs.html">diff_inputs()</a></code> <code><a href="diff_inputs.html">print(<i>&lt;genproc_input_diff&gt;</i>)</a></code>
 
         </dt>
         <dd>Compare input file fingerprints between two genproc runs</dd>
+      </dl></div><div class="section level2">
+      <h2 id="building-blocks">Building blocks<a class="anchor" aria-label="anchor" href="#building-blocks"></a></h2>
 
-        <dt>
+      <div class="section-desc"><p>Derive the function and the mask from a working example. Useful when migrating an existing one-off script to a genproc workflow.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="from_example_to_function.html">from_example_to_function()</a></code>
 
@@ -79,34 +134,6 @@
 
         <dt>
 
-          <code><a href="genproc.html">genproc()</a></code>
-
-        </dt>
-        <dd>Run a function over a mask with mandatory logging and reproducibility</dd>
-
-        <dt>
-
-          <code><a href="nonblocking_spec.html">nonblocking_spec()</a></code>
-
-        </dt>
-        <dd>Specify a non-blocking execution strategy for genproc()</dd>
-
-        <dt>
-
-          <code><a href="parallel_spec.html">parallel_spec()</a></code>
-
-        </dt>
-        <dd>Specify a parallel execution strategy for genproc()</dd>
-
-        <dt>
-
-          <code><a href="print.genproc_result.html">print(<i>&lt;genproc_result&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print a genproc result</dd>
-
-        <dt>
-
           <code><a href="rename_function_params.html">rename_function_params()</a></code>
 
         </dt>
@@ -114,12 +141,13 @@
 
         <dt>
 
-          <code><a href="status.html">status()</a></code>
+          <code><a href="add_trycatch_logrow.html">add_trycatch_logrow()</a></code>
 
         </dt>
-        <dd>Query the status of a genproc run without blocking</dd>
+        <dd>Wrap a function with error handling and a structured log row</dd>
       </dl></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

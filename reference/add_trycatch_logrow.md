@@ -64,14 +64,16 @@ The returned data.frame always has one row. Columns:
 
 ``` r
 safe_sqrt <- add_trycatch_logrow(function(x) sqrt(x))
-safe_sqrt(4)    # success = TRUE, duration_secs > 0
-#>   x success error_message traceback duration_secs
-#> 1 4    TRUE          <NA>      <NA>             0
-safe_sqrt("a")  # success = FALSE, error_message filled, traceback filled
+
+# Happy path: one-row data.frame, success = TRUE.
+safe_sqrt(4)[, c("x", "success", "error_message", "duration_secs")]
+#>   x success error_message duration_secs
+#> 1 4    TRUE          <NA>             0
+
+# Failing call: the run does not stop. The row carries the error
+# message and a filtered traceback instead of throwing.
+bad <- safe_sqrt("a")
+bad[, c("x", "success", "error_message")]
 #>   x success                                 error_message
 #> 1 a   FALSE non-numeric argument to mathematical function
-#>                                                                                                                                                                                                                                                                                                                                                                                                                                                                       traceback
-#> 1 1. build_site(pkg, preview = FALSE, install = install, new_process = new_process, ...)\n2. build_site_local(pkg = pkg, examples = examples, run_dont_run = run_dont_run, seed = seed, lazy = lazy, override = o ...\n3. build_reference(pkg, lazy = lazy, examples = examples, run_dont_run = run_dont_run, seed = seed, override = override ...\n4. unwrap_purrr_error(purrr::map(topics, build_reference_topic, pkg = pkg, lazy = lazy, examples_env = examples_env, ru ...
-#>   duration_secs
-#> 1         0.001
 ```

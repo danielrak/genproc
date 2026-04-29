@@ -50,9 +50,9 @@ a future companion Shiny package.
 
 Useful links:
 
-- <https://github.com/danielrak/genproc>
-
 - <https://danielrak.github.io/genproc/>
+
+- <https://github.com/danielrak/genproc>
 
 - Report bugs at <https://github.com/danielrak/genproc/issues>
 

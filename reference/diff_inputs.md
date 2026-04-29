@@ -11,6 +11,9 @@ reports which referenced input files have changed since the first run.
 
 ``` r
 diff_inputs(r0, r1)
+
+# S3 method for class 'genproc_input_diff'
+print(x, ...)
 ```
 
 ## Arguments
@@ -21,6 +24,14 @@ diff_inputs(r0, r1)
   and `r1` the later one, but the function is symmetric with respect to
   `changed` / `unchanged`. The labels `removed` (present in `r0`, absent
   in `r1`) and `added` (the opposite) follow the asymmetric convention.
+
+- x:
+
+  A `genproc_input_diff` object.
+
+- ...:
+
+  Ignored (present for S3 method consistency).
 
 ## Value
 
@@ -59,10 +70,33 @@ agree between the two runs.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-  r0 <- genproc(my_fn, my_mask)
-  # ... edit one of the input CSVs ...
-  r1 <- genproc(my_fn, my_mask)
-  diff_inputs(r0, r1)
-} # }
+# Two runs of the same procedure, with one input file rewritten
+# in between. `diff_inputs()` reports the drift.
+src <- file.path(tempdir(), "diff-inputs-demo")
+dir.create(src, showWarnings = FALSE, recursive = TRUE)
+write.csv(head(iris), file.path(src, "a.csv"), row.names = FALSE)
+
+mask <- data.frame(
+  path = file.path(src, "a.csv"),
+  stringsAsFactors = FALSE
+)
+read_one <- function(path) nrow(read.csv(path))
+
+r0 <- genproc(read_one, mask)
+
+# Rewrite the file with strictly more rows: size changes.
+write.csv(iris, file.path(src, "a.csv"), row.names = FALSE)
+
+r1 <- genproc(read_one, mask)
+diff_inputs(r0, r1)
+#> genproc input diff (method: stat)
+#>   Changed:   1
+#>   Unchanged: 0
+#>   Removed:   0
+#>   Added:     0
+#> 
+#> Changed files:
+#>   /tmp/RtmpZOjlkM/diff-inputs-demo/a.csv
+#>       size:  214 B -> 3.9 KB
+#>       mtime: 2026-04-29 11:49:52 -> 2026-04-29 11:49:52
 ```

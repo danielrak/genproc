@@ -61,6 +61,21 @@ fn2 <- rename_function_params(fn, c(
   param_1 = "input_path",
   param_2 = "output_path"
 ))
-# fn2 now has formals input_path and output_path,
-# and the body uses those names.
+
+# Formals were renamed:
+formals(fn2)
+#> $input_path
+#> [1] "in.csv"
+#> 
+#> $output_path
+#> [1] "out.csv"
+#> 
+
+# And the body too — references to `param_1` and `param_2` are
+# updated in place, the function source is not edited.
+body(fn2)
+#> {
+#>     df <- read.csv(input_path)
+#>     write.csv(df, output_path)
+#> }
 ```

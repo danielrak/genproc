@@ -59,13 +59,13 @@
 <div class="section level3">
 <h3 id="building-blocks-0-1-0">Building blocks<a class="anchor" aria-label="anchor" href="#building-blocks-0-1-0"></a></h3>
 <ul><li>
-<code><a href="../reference/from_example_to_function.html">from_example_to_function()</a></code>: transform an example expression into a parameterized function (modular AST rewrite engine, no rlang dependency).</li>
+<code><a href="../reference/from_example_to_function.html">from_example_to_function()</a></code>: turn an example expression that works for one case into a parameterized function. String literals and free symbols become parameters with the original value as default. Built on a dependency-free AST rewriter.</li>
 <li>
-<code><a href="../reference/from_function_to_mask.html">from_function_to_mask()</a></code>: derive a one-row template mask (<code>data.frame</code>) from a function’s signature.</li>
+<code><a href="../reference/from_function_to_mask.html">from_function_to_mask()</a></code>: derive a one-row template <code>data.frame</code> from a function’s signature, ready to be expanded into a full iteration mask.</li>
 <li>
-<code><a href="../reference/rename_function_params.html">rename_function_params()</a></code>: rename parameters in formals and body.</li>
+<code><a href="../reference/rename_function_params.html">rename_function_params()</a></code>: rename parameters in formals and body in one pass, without editing the function source.</li>
 <li>
-<code><a href="../reference/add_trycatch_logrow.html">add_trycatch_logrow()</a></code>: the low-level logging wrapper used by <code><a href="../reference/genproc.html">genproc()</a></code>.</li>
+<code><a href="../reference/add_trycatch_logrow.html">add_trycatch_logrow()</a></code>: the standalone logging wrapper used by <code><a href="../reference/genproc.html">genproc()</a></code>, exposed for users who want the logged layer outside the full pipeline.</li>
 </ul></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
