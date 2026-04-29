@@ -104,6 +104,29 @@
 #' run continues with the next case. This holds identically in
 #' sequential and parallel mode.
 #'
+#' ## Composing parallel and non-blocking
+#'
+#' When both `parallel` and `nonblocking` are supplied, the
+#' non-blocking wrapper envelops the parallel dispatch (one outer
+#' future submits the run, inner workers process the cases). On
+#' platforms where the wrapper subprocess R inherits a restrictive
+#' default for `getOption("mc.cores")` (typically 1 on Windows and in
+#' some RStudio configurations), `parallelly` would otherwise refuse
+#' to spawn the inner workers. `genproc()` works around this with
+#' two surgical adjustments inside the wrapper subprocess, applied
+#' *only* in the composed case and *only* when the user has not set
+#' their own values:
+#'
+#' 1. Set `R_PARALLELLY_AVAILABLECORES_METHODS = "system"` so that
+#'    `availableCores()` ignores the legacy `mc.cores` option and
+#'    reports the true detected core count (lifts the hard-limit
+#'    refusal).
+#' 2. Raise `options(mc.cores)` from 1 to the system core count, so
+#'    that `parallelly`'s soft-limit warning no longer fires with a
+#'    misleading "only 1 CPU cores available" message.
+#'
+#' The calling session is never modified by either adjustment.
+#'
 #' ## Case IDs
 #'
 #' Each row of the mask receives a `case_id` (currently index-based:
@@ -304,6 +327,53 @@ genproc <- function(f, mask, f_mapping = NULL, parallel = NULL,
 
   fut <- future::future(
     {
+      # --- Auto-config for nested parallel composition --------------------
+      # When the user composes parallel + non-blocking on a typical
+      # Windows + RStudio session, parallelly's resolution inside this
+      # wrapper subprocess R reaches the `mc.cores` method first and
+      # finds 1 (the legacy default for `parallel::mclapply` which is a
+      # no-op on Windows). The parallel layer then refuses to spawn
+      # multiple workers because workers / 1 > the localhost hard
+      # limit. The composed call fails for a reason unrelated to the
+      # user's machine.
+      #
+      # We work around this by forcing parallelly to use only the
+      # `system` method (true detected core count) inside the wrapper
+      # subprocess, *only when a parallel layer is actually composed*
+      # and *only when the user has not set their own preference*.
+      # Setting Sys.setenv() here mutates only the wrapper subprocess
+      # — the calling session is untouched.
+      if (!is.null(parallel) &&
+          !nzchar(Sys.getenv("R_PARALLELLY_AVAILABLECORES_METHODS"))) {
+        Sys.setenv(R_PARALLELLY_AVAILABLECORES_METHODS = "system")
+      }
+      # parallelly's `checkNumberOfLocalWorkers` also consults
+      # getOption("mc.cores") directly for its soft-limit warning,
+      # independently of AVAILABLECORES_METHODS. When the wrapper
+      # subprocess inherits mc.cores = 1 (or unset), the user gets a
+      # warning ("only 1 CPU cores available... 200% load") that is
+      # misleading once we have already lifted the hard limit. We
+      # therefore raise mc.cores here. Note: `options(mc.cores = 1)`
+      # in user code stores a double, not an integer, so we use a
+      # permissive numeric comparison rather than `identical(.., 1L)`.
+      # We override only when mc.cores is unset or pinned to 1 (the
+      # restrictive defaults on Windows / legacy mclapply); we never
+      # touch a value the user has deliberately raised.
+      mc_current <- getOption("mc.cores")
+      mc_is_restrictive <-
+        is.null(mc_current) ||
+        (is.numeric(mc_current) && length(mc_current) == 1L &&
+         !is.na(mc_current) && mc_current <= 1)
+      if (!is.null(parallel) && mc_is_restrictive) {
+        n_cores <- tryCatch(
+          parallel::detectCores(logical = TRUE),
+          error = function(e) NA_integer_
+        )
+        if (!is.na(n_cores) && n_cores >= 2L) {
+          options(mc.cores = n_cores)
+        }
+      }
+
       run_start <- proc.time()[["elapsed"]]
       log_rows  <- execute_cases_fn(f_logged, args_list, parallel)
       run_end   <- proc.time()[["elapsed"]]

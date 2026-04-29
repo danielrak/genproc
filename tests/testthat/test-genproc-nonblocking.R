@@ -217,3 +217,80 @@ test_that("multisession non-blocking run materializes without cancellation", {
   expect_equal(x$n_error, 0L)
   expect_equal(x$log$x, 1:3)
 })
+
+
+# === Regression F1: composed parallel + non-blocking under mc.cores=1 =========
+
+test_that("composed parallel + nonblocking does not trip parallelly hard limit", {
+  # Regression: a typical Windows + RStudio session has
+  # `getOption("mc.cores") == 1` by legacy default. Without
+  # intervention, parallelly inside the wrapper subprocess would see
+  # `workers / 1 > 3.0` (the localhost hard limit) and refuse to spawn
+  # the inner workers, surfacing
+  # "only 1 CPU cores available for this R process (per 'mc.cores')".
+  # genproc() works around this by setting
+  # R_PARALLELLY_AVAILABLECORES_METHODS = "system" inside the wrapper
+  # subprocess in the composed case.
+  skip_on_cran()
+  skip_if_not_installed("future")
+  skip_if_not_installed("future.apply")
+  skip_if_not(
+    "genproc" %in% rownames(utils::installed.packages()),
+    "genproc not installed — skip (multisession needs installed pkg)"
+  )
+
+  old_plan <- future::plan(future::sequential)
+  on.exit(future::plan(old_plan), add = TRUE)
+
+  # Simulate the Windows/RStudio default that triggered the original
+  # bug, regardless of the actual local environment.
+  old_mc_cores <- getOption("mc.cores")
+  options(mc.cores = 1L)
+  on.exit(options(mc.cores = old_mc_cores), add = TRUE)
+
+  # Make sure no pre-existing R_PARALLELLY_AVAILABLECORES_METHODS is
+  # set — we want to exercise the auto-config path of genproc().
+  old_env <- Sys.getenv("R_PARALLELLY_AVAILABLECORES_METHODS",
+                        unset = NA)
+  Sys.unsetenv("R_PARALLELLY_AVAILABLECORES_METHODS")
+  on.exit({
+    if (is.na(old_env)) {
+      Sys.unsetenv("R_PARALLELLY_AVAILABLECORES_METHODS")
+    } else {
+      Sys.setenv(R_PARALLELLY_AVAILABLECORES_METHODS = old_env)
+    }
+  }, add = TRUE)
+
+  x <- genproc(
+    f = function(x) x * 2,
+    mask = data.frame(x = 1:4),
+    parallel    = parallel_spec(workers = 2),
+    nonblocking = nonblocking_spec()
+  )
+  # Capture warnings during await(): we want to detect any parallelly
+  # complaint about "1 CPU cores available". Other warnings unrelated
+  # to F1 (e.g. package version mismatches on the worker) are tolerated.
+  warns <- character()
+  x <- withCallingHandlers(
+    await(x),
+    warning = function(w) {
+      warns <<- c(warns, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  expect_equal(x$status, "done")
+  expect_equal(x$n_success, 4L)
+  expect_equal(x$n_error, 0L)
+  expect_equal(x$log$x, 1:4)
+  # The calling session must be unchanged: we never set the env var
+  # in the parent process, only inside the wrapper subprocess.
+  expect_identical(
+    Sys.getenv("R_PARALLELLY_AVAILABLECORES_METHODS", unset = NA),
+    NA_character_
+  )
+  expect_identical(getOption("mc.cores"), 1L)
+  # No parallelly cores warning should leak through (both hard and
+  # soft limits must be silenced by the auto-config).
+  expect_false(any(grepl("CPU cores available", warns)))
+})

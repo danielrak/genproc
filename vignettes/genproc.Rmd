@@ -476,6 +476,33 @@ to avoid worker explosion. For true nested parallelism, install
 `future::plan(list(...))` explicitly and pass `strategy = NULL` on
 both specs.
 
+### Default `mc.cores` in the wrapper subprocess
+
+On Windows and in some RStudio configurations, the wrapper
+subprocess inherits `getOption("mc.cores")` set to `1` (the legacy
+default for `parallel::mclapply()`, which is a no-op on Windows).
+Without intervention, `parallelly` would refuse to spawn the inner
+workers because `workers / 1` exceeds the localhost hard limit, and
+the composed call would fail with a confusing
+`"only 1 CPU cores available for this R process (per 'mc.cores')"`
+error.
+
+`genproc()` handles this transparently. In the composed case
+(`parallel != NULL && nonblocking != NULL`), it makes two
+adjustments inside the wrapper subprocess:
+
+1. Sets `R_PARALLELLY_AVAILABLECORES_METHODS = "system"` so that
+   `parallelly` ignores `mc.cores` and uses the true detected core
+   count for its hard-limit check.
+2. Raises `options(mc.cores)` from 1 to the system core count, so
+   that `parallelly`'s soft-limit warning ("only 1 CPU cores
+   available... 200% load") does not fire with a misleading
+   message after the hard limit has been lifted.
+
+Both adjustments only apply if the user has not set their own
+values, and only inside the wrapper subprocess. The calling session
+is never modified.
+
 ## Current edges and roadmap
 
 Not yet in the package, but explicitly planned:

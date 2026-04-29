@@ -1,3 +1,21 @@
+# genproc 0.2.0 (development version)
+
+## UX improvements
+
+* Composing `parallel = parallel_spec(...)` and
+  `nonblocking = nonblocking_spec(...)` now works out of the box on
+  Windows and in RStudio configurations where the wrapper subprocess
+  inherits `getOption("mc.cores")` set to 1. Previously, the
+  composed call failed with a `parallelly` "only 1 CPU cores
+  available" error, and (less visibly) emitted a misleading
+  soft-limit warning. `genproc()` now applies two surgical
+  adjustments inside the wrapper subprocess in the composed case
+  (only when the user has not set their own values): it sets
+  `R_PARALLELLY_AVAILABLECORES_METHODS = "system"` to lift the hard
+  limit, and raises `options(mc.cores)` to silence the soft-limit
+  warning. The calling session is never modified.
+
+
 # genproc 0.1.0
 
 First public release. The package consolidates the four execution

@@ -1,6 +1,6 @@
 Package: genproc
 Title: Robust, Logged and Reproducible Iteration at Organizational Scale
-Version: 0.1.0
+Version: 0.1.0.9000
 Authors@R:
     person("Daniel", "Rakotomalala", , "rakdanielh@gmail.com", role = c("aut", "cre"))
 Description: Turns one-off iterative R procedures (such as 'for' loops,
@@ -23,6 +23,7 @@ BugReports: https://github.com/danielrak/genproc/issues
 Imports:
     future,
     future.apply,
+    parallel,
     stats,
     utils
 Suggests:
