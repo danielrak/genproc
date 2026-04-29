@@ -18,6 +18,15 @@
 #' background run. Numeric fields stay `(pending)` until [await()] is
 #' called to materialize the result.
 #'
+#' When the parallel layer was used and startup overhead clearly
+#' dominated the run, the print method emits a `Note` hinting at
+#' the issue — a pattern that often surprises users on small
+#' workloads. Two metrics depending on whether `workers` is known:
+#' parallel efficiency (`(cumulative / workers) / wall`) below 50%
+#' when `workers` is supplied, or `wall > cumulative * 1.2` in
+#' power-user mode (workers unknown). Both require `wall > 0.5s` to
+#' avoid noise on very short runs.
+#'
 #' @param x A `genproc_result` object.
 #' @param ... Ignored (present for S3 method consistency).
 #' @return `x`, invisibly.
@@ -68,6 +77,62 @@ print.genproc_result <- function(x, ...) {
                          error = function(e) "x")
     if (!nzchar(var_name) || length(var_name) != 1L) var_name <- "x"
     cat("  -> ", var_name, " <- await(", var_name, ")\n", sep = "")
+  }
+
+  # F12 — Hint when parallel was used but startup overhead clearly
+  # dominated the run.
+  #
+  # Two metrics, depending on whether the user passed `workers`:
+  #
+  # (a) workers known: parallel efficiency =
+  #       (cumulative_work / workers) / wall_clock.
+  #     Below 50% efficiency, parallel did not amortize its startup
+  #     cost. Catches the typical case of `parallel_spec(workers=4)`
+  #     on a small workload where each case takes a few ms.
+  #
+  # (b) workers unknown (power-user mode, plan set by the caller):
+  #     fallback to wall > cumulative * 1.2. Less precise but still
+  #     catches the cases where parallel was strictly slower than a
+  #     hypothetical sequential run.
+  #
+  # In both cases we require wall > 0.5s to avoid noise on very
+  # short runs where measurement granularity dominates.
+  if (materialized &&
+      !is.null(x$reproducibility) &&
+      !is.null(x$reproducibility$parallel) &&
+      is.numeric(x$duration_total_secs) &&
+      !is.null(x$log) &&
+      "duration_secs" %in% names(x$log)) {
+    total_work <- sum(x$log$duration_secs, na.rm = TRUE)
+    wall       <- x$duration_total_secs
+    workers    <- x$reproducibility$parallel$workers
+
+    # Compute the trigger.
+    fire <- FALSE
+    detail_line <- ""
+    if (wall > 0.5 && total_work > 0) {
+      if (is.numeric(workers) && length(workers) == 1L && workers >= 2L) {
+        ideal      <- total_work / workers
+        efficiency <- ideal / wall
+        if (efficiency < 0.5) {
+          fire <- TRUE
+          detail_line <- sprintf(
+            "            wall-clock %.2fs vs ideal %.2fs (%d workers, %.0f%% efficiency)\n",
+            wall, ideal, workers, 100 * efficiency)
+        }
+      } else if (wall > total_work * 1.2) {
+        fire <- TRUE
+        detail_line <- sprintf(
+          "            wall-clock %.2fs vs cumulative work %.2fs\n",
+          wall, total_work)
+      }
+    }
+
+    if (fire) {
+      cat("  Note    : parallel startup dominated this run\n")
+      cat(detail_line)
+      cat("            -> consider sequential for short workloads\n")
+    }
   }
 
   invisible(x)

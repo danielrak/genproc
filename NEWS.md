@@ -22,6 +22,15 @@
 
 ## UX improvements
 
+* When `parallel` was used but startup overhead clearly dominated
+  the run, `print(result)` now emits a `Note` warning. Two
+  metrics: parallel efficiency below 50% when `workers` is
+  supplied (catches cases like `parallel_spec(workers = 4)` that
+  yield no real speedup), or wall-clock above `cumulative * 1.2`
+  in power-user mode (workers unknown). Both require wall > 0.5s
+  to avoid noise. Addresses the common surprise of activating
+  parallel on a small workload and observing a slowdown.
+
 * Tracebacks captured by the logged layer are now substantially
   shorter and easier to read. Internal dispatcher frames
   (`execute_cases`, `do.call`, `FUN`), invocation context frames
