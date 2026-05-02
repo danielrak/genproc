@@ -33,24 +33,25 @@ Sys.setenv(LANGUAGE = "en")
 
 `genproc` turns one-off iterative R procedures (`for`, `lapply()`,
 `purrr::pmap()`, ...) into production-grade workflows by wrapping
-them with orthogonal, composable execution layers. The goal is to
-make the transition from *"a script that works on one case"* to
-*"a system that runs reliably on many cases"* an architectural
+them with orthogonal, composable execution layers: **Logged** and
+**Reproducibility** are always active; **Parallel**,
+**Non-blocking**, and **Monitoring** compose on top. The goal is
+to make the transition from *"a script that works on one case"*
+to *"a system that runs reliably on many cases"* an architectural
 step, not an improvised rewrite.
 
-Two layers are always active and cannot be disabled:
+The two always-active layers:
 
 - **Logged** — each case produces a structured log row with the
   real traceback (captured via `withCallingHandlers()`) and per-case
   timing.
 - **Reproducibility** — each run records the R version, loaded
   package versions, execution environment, the exact iteration
-  mask, and the spec of any optional layer used, so that two runs
-  can be compared and any change in execution parameters is
-  auditable.
+  mask, the spec of any optional layer used, and a stat-based
+  fingerprint of every input file referenced by the mask, so that
+  two runs can be compared and any silent input drift detected.
 
-Two optional layers can be composed with the defaults, at the
-caller's choice:
+The three optional layers:
 
 - **Parallel** execution via the `future` ecosystem
   (`future.apply::future_lapply()`).
@@ -58,6 +59,9 @@ caller's choice:
   a `genproc_result` of status `"running"` while the run continues
   in a background future. Poll with `status()`, block with
   `await()`.
+- **Monitoring** via `progressr` — opt-in progress reporting that
+  emits one progression signal per completed case in sequential and
+  parallel modes.
 
 `genproc` has **zero Shiny dependency**. A companion package
 (`genprocShiny`) will later build a UI on top of these functions.
@@ -134,8 +138,7 @@ mask_with_missing <- mask
 mask_with_missing$src_file[2] <- "does_not_exist.csv"
 
 result2 <- genproc(convert, mask_with_missing)
-result2$log[!result2$log$success,
-            c("case_id", "src_file", "error_message")]
+errors(result2)[, c("case_id", "src_file", "error_message")]
 result2$n_success
 result2$n_error
 ```
@@ -143,6 +146,26 @@ result2$n_error
 The traceback column holds the real R call stack of the failing
 case (filtered for the `tryCatch`/`withCallingHandlers` machinery),
 so debugging a failed case reads like a normal R error.
+
+## Inspect and act on a result
+
+Three helpers digest a result without touching `result$log`
+directly:
+
+```{r inspect-helpers}
+errors(result2)        # data.frame of failed cases only
+summary(result2)       # printable digest: status, success rate,
+                       # duration stats, top recurring errors
+```
+
+Two more close the loop by re-running a targeted subset:
+
+```r
+rerun_failed(result2, convert)            # only failed cases
+rerun_affected(result0, diff, convert)    # only cases referenced
+                                          # by changed inputs (see
+                                          # next section)
+```
 
 ## The reproducibility snapshot
 
@@ -248,16 +271,36 @@ job <- genproc(
 )
 ```
 
+## Progress monitoring
+
+Wrap a run in `progressr::with_progress()` to opt in to per-case
+progress reporting:
+
+```r
+library(progressr)
+
+with_progress({
+  result <- genproc(convert, mask)
+})
+```
+
+Pick a renderer once per session with `progressr::handlers()`
+(default `"txtprogressbar"`, alternatives include `"progress"` and
+`"cli"`). Without `with_progress()`, or without `progressr`
+installed, the integration is a complete no-op. Live monitoring of
+non-blocking runs is on the roadmap.
+
 ## Status
 
-Lifecycle: **experimental**. The four execution layers (logged,
-reproducibility, parallel, non-blocking) and the `genproc_result`
-contract are committed to forward compatibility across the 0.x
-series — existing fields are guaranteed not to be removed or
-renamed. New fields and new optional layers may be added.
+Lifecycle: **experimental**. The five execution layers (logged,
+reproducibility, parallel, non-blocking, monitoring) and the
+`genproc_result` contract are committed to forward compatibility
+across the 0.x series — existing fields are guaranteed not to be
+removed or renamed. New fields and new optional layers may be
+added.
 
-The 0.1.0 release is the first public submission and is not yet on
-CRAN. Install from GitHub for now (see above).
+The 0.2.0 release is the first public submission and is not yet
+on CRAN. Install from GitHub for now (see above).
 
 ## Learn more
 
