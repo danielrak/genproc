@@ -17,34 +17,40 @@ count_progressions <- function(expr) {
   skip_if_not_installed("progressr")
 
   # Force a "void" handler so the test is deterministic across
-  # session types:
-  #   * On a non-interactive session (e.g. R CMD check on CI), the
-  #     default progressr handler may decline to emit progression
-  #     conditions at all, leaving the outer withCallingHandlers
-  #     with nothing to capture (we observed n = 0 on Linux CI).
-  #   * On an interactive session, the default visual handler may
-  #     muffle the condition before our outer handler sees it.
-  # `handler_void` always emits, never renders, never muffles.
+  # session types: void emits the progression conditions but
+  # neither renders them nor muffles them, so the outer
+  # withCallingHandlers can capture them.
   old_handlers <- progressr::handlers()
   progressr::handlers("void")
   on.exit(progressr::handlers(old_handlers), add = TRUE)
 
   n <- 0L
-  res <- progressr::with_progress({
-    withCallingHandlers(
-      expr,
-      progression = function(cond) {
-        n <<- n + 1L
-        # The restart name for progressr conditions is
-        # "muffleProgression", not the generic "muffleCondition".
-        # Without invokeRestart() the condition keeps propagating
-        # and downstream handlers double-count it.
-        if (!is.null(findRestart("muffleProgression"))) {
-          invokeRestart("muffleProgression")
+  # `enable = TRUE` is critical here. progressr::with_progress()
+  # defaults to consulting `interactive()` (via the
+  # `progressr.enable` option) to decide whether to instantiate a
+  # progressor at all. On a non-interactive session (R CMD check
+  # on CI), the default declines, no progressor is created, and no
+  # progression conditions are ever emitted — leaving the outer
+  # withCallingHandlers with nothing to capture (n = 0). Forcing
+  # enable = TRUE makes the helper deterministic everywhere.
+  res <- progressr::with_progress(
+    {
+      withCallingHandlers(
+        expr,
+        progression = function(cond) {
+          n <<- n + 1L
+          # The restart name for progressr conditions is
+          # "muffleProgression", not the generic "muffleCondition".
+          # Without invokeRestart() the condition keeps
+          # propagating and downstream handlers double-count it.
+          if (!is.null(findRestart("muffleProgression"))) {
+            invokeRestart("muffleProgression")
+          }
         }
-      }
-    )
-  })
+      )
+    },
+    enable = TRUE
+  )
   list(result = res, n = n)
 }
 
@@ -126,24 +132,36 @@ test_that("non-blocking path does not emit progressr signals during the run", {
   # to verify that no progression burst appears when the run is
   # finally collected — the design choice is to skip live progressr
   # in non-blocking mode entirely (see execute_cases monitor flag).
+  # Force a void handler + enable = TRUE so this test exercises the
+  # real "is the per-case burst suppressed?" check on non-interactive
+  # CI sessions too. Without enable = TRUE, with_progress() defers to
+  # interactive() and never creates a progressor on CI, which would
+  # make this test pass trivially (n = 0) for the wrong reason.
+  old_handlers <- progressr::handlers()
+  progressr::handlers("void")
+  on.exit(progressr::handlers(old_handlers), add = TRUE)
+
   n <- 0L
-  progressr::with_progress({
-    withCallingHandlers(
-      {
-        x <- genproc(
-          function(x) x, data.frame(x = 1:3),
-          nonblocking = nonblocking_spec(strategy = "sequential")
-        )
-        x <- await(x)
-      },
-      progression = function(cond) {
-        n <<- n + 1L
-        if (!is.null(findRestart("muffleProgression"))) {
-          invokeRestart("muffleProgression")
+  progressr::with_progress(
+    {
+      withCallingHandlers(
+        {
+          x <- genproc(
+            function(x) x, data.frame(x = 1:3),
+            nonblocking = nonblocking_spec(strategy = "sequential")
+          )
+          x <- await(x)
+        },
+        progression = function(cond) {
+          n <<- n + 1L
+          if (!is.null(findRestart("muffleProgression"))) {
+            invokeRestart("muffleProgression")
+          }
         }
-      }
-    )
-  })
+      )
+    },
+    enable = TRUE
+  )
   expect_equal(x$n_success, 3L)
   # The non-blocking path passes monitor = FALSE to execute_cases,
   # so no per-case signals are emitted. progressr may still emit
