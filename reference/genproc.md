@@ -172,6 +172,25 @@ which captures the error message and the real traceback (via
 `withCallingHandlers`). The run continues with the next case. This holds
 identically in sequential and parallel mode.
 
+### Progress monitoring
+
+`genproc()` emits one `progressr` signal per completed case in
+sequential and parallel modes. The signals are no-op unless the calling
+code is wrapped in `progressr::with_progress(...)`, in which case the
+user sees a progress bar (or any other handler chosen via
+[`progressr::handlers()`](https://progressr.futureverse.org/reference/handlers.html)):
+
+    library(progressr)
+    with_progress(
+      result <- genproc(my_fn, mask, parallel = parallel_spec(workers = 4))
+    )
+
+Without `with_progress()`, there is zero overhead and zero visible
+change: the integration is a hook, not a default behaviour. `progressr`
+is declared in `Suggests`; the integration is conditional on its
+installation. The non-blocking path does not yet emit signals — live
+monitoring of background runs is on the roadmap.
+
 ### Composing parallel and non-blocking
 
 When both `parallel` and `nonblocking` are supplied, the non-blocking
@@ -220,9 +239,9 @@ result <- genproc(
 )
 result$log
 #>     case_id x  y success error_message traceback duration_secs
-#> 1 case_0001 1 10    TRUE          <NA>      <NA>         0.001
-#> 2 case_0002 2 20    TRUE          <NA>      <NA>         0.000
-#> 3 case_0003 3 30    TRUE          <NA>      <NA>         0.000
+#> 1 case_0001 1 10    TRUE          <NA>      <NA>             0
+#> 2 case_0002 2 20    TRUE          <NA>      <NA>             0
+#> 3 case_0003 3 30    TRUE          <NA>      <NA>             0
 
 # One-off parallel call: genproc installs a temporary multisession
 # plan and restores the previous one on exit.

@@ -79,13 +79,13 @@ Column order is designed for a human scanning a run:
 
 result$log
 #>     case_id                              src_dir src_file
-#> 1 case_0001 /tmp/RtmpjTnGRl/genproc-vignette-src    a.csv
-#> 2 case_0002 /tmp/RtmpjTnGRl/genproc-vignette-src    b.csv
-#> 3 case_0003 /tmp/RtmpjTnGRl/genproc-vignette-src    c.csv
+#> 1 case_0001 /tmp/RtmpGxLjSj/genproc-vignette-src    a.csv
+#> 2 case_0002 /tmp/RtmpGxLjSj/genproc-vignette-src    b.csv
+#> 3 case_0003 /tmp/RtmpGxLjSj/genproc-vignette-src    c.csv
 #>                                dst_dir dst_file success error_message traceback
-#> 1 /tmp/RtmpjTnGRl/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
-#> 2 /tmp/RtmpjTnGRl/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
-#> 3 /tmp/RtmpjTnGRl/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
+#> 1 /tmp/RtmpGxLjSj/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
+#> 2 /tmp/RtmpGxLjSj/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
+#> 3 /tmp/RtmpGxLjSj/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
 #>   duration_secs
 #> 1         0.001
 #> 2         0.001
@@ -102,7 +102,7 @@ of the mask can be reordered between runs.
 
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-05-02 18:13:18"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-05-02 18:32:39"
 #>  $ r_version    : chr "R version 4.6.0 (2026-04-24)"
 #>  $ platform     : chr "x86_64-pc-linux-gnu"
 #>  $ os           : chr "Linux 6.17.0-1010-azure"
@@ -186,9 +186,9 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                         path size               mtime
-#> 1 /tmp/RtmpjTnGRl/genproc-vignette-src/a.csv  214 2026-05-02 18:13:18
-#> 2 /tmp/RtmpjTnGRl/genproc-vignette-src/b.csv  296 2026-05-02 18:13:18
-#> 3 /tmp/RtmpjTnGRl/genproc-vignette-src/c.csv  154 2026-05-02 18:13:18
+#> 1 /tmp/RtmpGxLjSj/genproc-vignette-src/a.csv  214 2026-05-02 18:32:39
+#> 2 /tmp/RtmpGxLjSj/genproc-vignette-src/b.csv  296 2026-05-02 18:32:39
+#> 3 /tmp/RtmpGxLjSj/genproc-vignette-src/c.csv  154 2026-05-02 18:32:39
 ```
 
 #### Shared inputs are deduplicated
@@ -254,9 +254,9 @@ diff_inputs(run0, run1)
 #>   Cases affected: 1
 #> 
 #> Changed files:
-#>   /tmp/RtmpjTnGRl/genproc-vignette-src/a.csv
+#>   /tmp/RtmpGxLjSj/genproc-vignette-src/a.csv
 #>       size:  214 B -> 3.9 KB
-#>       mtime: 2026-05-02 18:13:18 -> 2026-05-02 18:13:19
+#>       mtime: 2026-05-02 18:32:39 -> 2026-05-02 18:32:39
 #> 
 #> Cases affected (use rerun_affected() to re-run):
 #>   case_0001
@@ -284,7 +284,7 @@ file.remove(file.path(src_dir, "b.csv"))
 #> [1] TRUE
 result_broken <- genproc(convert, mask)
 #> Warning in file(file, "rt"): cannot open file
-#> '/tmp/RtmpjTnGRl/genproc-vignette-src/b.csv': No such file or directory
+#> '/tmp/RtmpGxLjSj/genproc-vignette-src/b.csv': No such file or directory
 
 result_broken$n_success
 #> [1] 2
@@ -350,10 +350,10 @@ example <- expression({
 fn <- from_example_to_function(example)
 formals(fn)
 #> $param_1
-#> [1] "/tmp/RtmpjTnGRl/genproc-vignette-src/a.csv"
+#> [1] "/tmp/RtmpGxLjSj/genproc-vignette-src/a.csv"
 #> 
 #> $param_2
-#> [1] "/tmp/RtmpjTnGRl/genproc-vignette-dst/a-from-example.rds"
+#> [1] "/tmp/RtmpGxLjSj/genproc-vignette-dst/a-from-example.rds"
 ```
 
 ### 2. `from_function_to_mask()` — function signature to mask template
@@ -368,9 +368,9 @@ full mask.
 mask_template <- from_function_to_mask(fn)
 mask_template
 #>                                      param_1
-#> 1 /tmp/RtmpjTnGRl/genproc-vignette-src/a.csv
+#> 1 /tmp/RtmpGxLjSj/genproc-vignette-src/a.csv
 #>                                                   param_2
-#> 1 /tmp/RtmpjTnGRl/genproc-vignette-dst/a-from-example.rds
+#> 1 /tmp/RtmpGxLjSj/genproc-vignette-dst/a-from-example.rds
 ```
 
 ### 3. `rename_function_params()` — give the parameters domain names
@@ -386,10 +386,10 @@ fn_named <- rename_function_params(
 )
 formals(fn_named)
 #> $input_path
-#> [1] "/tmp/RtmpjTnGRl/genproc-vignette-src/a.csv"
+#> [1] "/tmp/RtmpGxLjSj/genproc-vignette-src/a.csv"
 #> 
 #> $output_path
-#> [1] "/tmp/RtmpjTnGRl/genproc-vignette-dst/a-from-example.rds"
+#> [1] "/tmp/RtmpGxLjSj/genproc-vignette-dst/a-from-example.rds"
 ```
 
 Putting it together: a renamed function plus a manually-built mask that
@@ -606,6 +606,42 @@ Both adjustments only apply if the user has not set their own values,
 and only inside the wrapper subprocess. The calling session is never
 modified.
 
+## Progress monitoring
+
+[`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+integrates with the
+[progressr](https://cran.r-project.org/package=progressr) framework.
+Wrap the call in `progressr::with_progress(...)` to opt in:
+
+``` r
+
+library(progressr)
+
+with_progress(
+  result <- genproc(my_fn, mask, parallel = parallel_spec(workers = 4))
+)
+```
+
+Behind the scenes,
+[`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)
+emits one progression condition per completed case. `progressr` lets the
+user pick any handler: the default text bar in the console, an RStudio
+gadget, audible beeps, custom log lines, or any handler the user wires
+up via
+[`progressr::handlers()`](https://progressr.futureverse.org/reference/handlers.html).
+
+Without
+[`with_progress()`](https://progressr.futureverse.org/reference/with_progress.html),
+the integration is a complete no-op — zero overhead, zero visible
+change. `progressr` is a soft dependency declared in `Suggests`; the
+integration is skipped if the package is not installed.
+
+In parallel mode, signals from worker subprocesses are propagated back
+to the parent session via `future.apply`. Live monitoring of
+non-blocking runs is not yet supported (signals would arrive in a burst
+at [`await()`](https://danielrak.github.io/genproc/reference/await.md)
+time rather than live during the run); this is on the roadmap.
+
 ## Current edges and roadmap
 
 Not yet in the package, but explicitly planned:
@@ -620,8 +656,10 @@ Not yet in the package, but explicitly planned:
   reordered.
 - **Error replay**: `replay(result, case_id)` to rerun one failed case
   in isolation.
-- **Monitored progress**: opt-in progress reporting that survives
-  non-blocking and parallel modes.
+- **Live monitoring of non-blocking runs**: today the `progressr`
+  integration covers the sequential and parallel paths only; the
+  non-blocking path needs a different design (collect progress in the
+  background, query on demand) and is planned.
 - **`cancel()` for non-blocking**: backend-dependent, deferred.
 
 The architecture is designed so that adding these layers does not

@@ -137,13 +137,13 @@ existing ones will never be removed or renamed.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span><span class="op">$</span><span class="va">log</span></span>
 <span><span class="co">#&gt;     case_id                              src_dir src_file</span></span>
-<span><span class="co">#&gt; 1 case_0001 /tmp/RtmpjTnGRl/genproc-vignette-src    a.csv</span></span>
-<span><span class="co">#&gt; 2 case_0002 /tmp/RtmpjTnGRl/genproc-vignette-src    b.csv</span></span>
-<span><span class="co">#&gt; 3 case_0003 /tmp/RtmpjTnGRl/genproc-vignette-src    c.csv</span></span>
+<span><span class="co">#&gt; 1 case_0001 /tmp/RtmpGxLjSj/genproc-vignette-src    a.csv</span></span>
+<span><span class="co">#&gt; 2 case_0002 /tmp/RtmpGxLjSj/genproc-vignette-src    b.csv</span></span>
+<span><span class="co">#&gt; 3 case_0003 /tmp/RtmpGxLjSj/genproc-vignette-src    c.csv</span></span>
 <span><span class="co">#&gt;                                dst_dir dst_file success error_message traceback</span></span>
-<span><span class="co">#&gt; 1 /tmp/RtmpjTnGRl/genproc-vignette-dst    a.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 2 /tmp/RtmpjTnGRl/genproc-vignette-dst    b.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 3 /tmp/RtmpjTnGRl/genproc-vignette-dst    c.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 1 /tmp/RtmpGxLjSj/genproc-vignette-dst    a.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 2 /tmp/RtmpGxLjSj/genproc-vignette-dst    b.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 3 /tmp/RtmpGxLjSj/genproc-vignette-dst    c.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
 <span><span class="co">#&gt;   duration_secs</span></span>
 <span><span class="co">#&gt; 1         0.001</span></span>
 <span><span class="co">#&gt; 2         0.001</span></span>
@@ -159,7 +159,7 @@ mask can be reordered between runs.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">reproducibility</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 11</span></span>
-<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-05-02 18:13:18"</span></span>
+<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-05-02 18:32:39"</span></span>
 <span><span class="co">#&gt;  $ r_version    : chr "R version 4.6.0 (2026-04-24)"</span></span>
 <span><span class="co">#&gt;  $ platform     : chr "x86_64-pc-linux-gnu"</span></span>
 <span><span class="co">#&gt;  $ os           : chr "Linux 6.17.0-1010-azure"</span></span>
@@ -254,9 +254,9 @@ that holds absolute paths directly:</p>
 <span><span class="va">run0</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">do_one</span>, <span class="va">mask_paths</span><span class="op">)</span></span>
 <span><span class="va">run0</span><span class="op">$</span><span class="va">reproducibility</span><span class="op">$</span><span class="va">inputs</span><span class="op">$</span><span class="va">files</span></span>
 <span><span class="co">#&gt;                                         path size               mtime</span></span>
-<span><span class="co">#&gt; 1 /tmp/RtmpjTnGRl/genproc-vignette-src/a.csv  214 2026-05-02 18:13:18</span></span>
-<span><span class="co">#&gt; 2 /tmp/RtmpjTnGRl/genproc-vignette-src/b.csv  296 2026-05-02 18:13:18</span></span>
-<span><span class="co">#&gt; 3 /tmp/RtmpjTnGRl/genproc-vignette-src/c.csv  154 2026-05-02 18:13:18</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 /tmp/RtmpGxLjSj/genproc-vignette-src/a.csv  214 2026-05-02 18:32:39</span></span>
+<span><span class="co">#&gt; 2 /tmp/RtmpGxLjSj/genproc-vignette-src/b.csv  296 2026-05-02 18:32:39</span></span>
+<span><span class="co">#&gt; 3 /tmp/RtmpGxLjSj/genproc-vignette-src/c.csv  154 2026-05-02 18:32:39</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="shared-inputs-are-deduplicated">Shared inputs are deduplicated<a class="anchor" aria-label="anchor" href="#shared-inputs-are-deduplicated"></a>
@@ -325,9 +325,9 @@ contradictory intentions and the call should clarify.</p>
 <span><span class="co">#&gt;   Cases affected: 1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Changed files:</span></span>
-<span><span class="co">#&gt;   /tmp/RtmpjTnGRl/genproc-vignette-src/a.csv</span></span>
+<span><span class="co">#&gt;   /tmp/RtmpGxLjSj/genproc-vignette-src/a.csv</span></span>
 <span><span class="co">#&gt;       size:  214 B -&gt; 3.9 KB</span></span>
-<span><span class="co">#&gt;       mtime: 2026-05-02 18:13:18 -&gt; 2026-05-02 18:13:19</span></span>
+<span><span class="co">#&gt;       mtime: 2026-05-02 18:32:39 -&gt; 2026-05-02 18:32:39</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Cases affected (use rerun_affected() to re-run):</span></span>
 <span><span class="co">#&gt;   case_0001</span></span></code></pre></div>
@@ -354,7 +354,7 @@ delete a source file between two runs:</p>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">result_broken</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in file(file, "rt"): cannot open file</span></span>
-<span><span class="co">#&gt; '/tmp/RtmpjTnGRl/genproc-vignette-src/b.csv': No such file or directory</span></span>
+<span><span class="co">#&gt; '/tmp/RtmpGxLjSj/genproc-vignette-src/b.csv': No such file or directory</span></span>
 <span></span>
 <span><span class="va">result_broken</span><span class="op">$</span><span class="va">n_success</span></span>
 <span><span class="co">#&gt; [1] 2</span></span>
@@ -410,10 +410,10 @@ function formals) are protected.</p>
 <span><span class="va">fn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/from_example_to_function.html">from_example_to_function</a></span><span class="op">(</span><span class="va">example</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/formals.html" class="external-link">formals</a></span><span class="op">(</span><span class="va">fn</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $param_1</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpjTnGRl/genproc-vignette-src/a.csv"</span></span>
+<span><span class="co">#&gt; [1] "/tmp/RtmpGxLjSj/genproc-vignette-src/a.csv"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $param_2</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpjTnGRl/genproc-vignette-dst/a-from-example.rds"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpGxLjSj/genproc-vignette-dst/a-from-example.rds"</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="from_function_to_mask-function-signature-to-mask-template">2. <code>from_function_to_mask()</code> — function signature to mask
@@ -426,9 +426,9 @@ template<a class="anchor" aria-label="anchor" href="#from_function_to_mask-funct
 <code class="sourceCode R"><span><span class="va">mask_template</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/from_function_to_mask.html">from_function_to_mask</a></span><span class="op">(</span><span class="va">fn</span><span class="op">)</span></span>
 <span><span class="va">mask_template</span></span>
 <span><span class="co">#&gt;                                      param_1</span></span>
-<span><span class="co">#&gt; 1 /tmp/RtmpjTnGRl/genproc-vignette-src/a.csv</span></span>
+<span><span class="co">#&gt; 1 /tmp/RtmpGxLjSj/genproc-vignette-src/a.csv</span></span>
 <span><span class="co">#&gt;                                                   param_2</span></span>
-<span><span class="co">#&gt; 1 /tmp/RtmpjTnGRl/genproc-vignette-dst/a-from-example.rds</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 /tmp/RtmpGxLjSj/genproc-vignette-dst/a-from-example.rds</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="rename_function_params-give-the-parameters-domain-names">3. <code>rename_function_params()</code> — give the parameters
@@ -444,10 +444,10 @@ is not edited.</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/formals.html" class="external-link">formals</a></span><span class="op">(</span><span class="va">fn_named</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $input_path</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpjTnGRl/genproc-vignette-src/a.csv"</span></span>
+<span><span class="co">#&gt; [1] "/tmp/RtmpGxLjSj/genproc-vignette-src/a.csv"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $output_path</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpjTnGRl/genproc-vignette-dst/a-from-example.rds"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/RtmpGxLjSj/genproc-vignette-dst/a-from-example.rds"</span></span></code></pre></div>
 <p>Putting it together: a renamed function plus a manually-built mask
 that follows the same column names.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
@@ -652,6 +652,33 @@ modified.</p>
 </div>
 </div>
 <div class="section level2">
+<h2 id="progress-monitoring">Progress monitoring<a class="anchor" aria-label="anchor" href="#progress-monitoring"></a>
+</h2>
+<p><code><a href="../reference/genproc.html">genproc()</a></code> integrates with the <a href="https://cran.r-project.org/package=progressr" class="external-link">progressr</a>
+framework. Wrap the call in <code>progressr::with_progress(...)</code>
+to opt in:</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://progressr.futureverse.org" class="external-link">progressr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://progressr.futureverse.org/reference/with_progress.html" class="external-link">with_progress</a></span><span class="op">(</span></span>
+<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">my_fn</span>, <span class="va">mask</span>, parallel <span class="op">=</span> <span class="fu"><a href="../reference/parallel_spec.html">parallel_spec</a></span><span class="op">(</span>workers <span class="op">=</span> <span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Behind the scenes, <code><a href="../reference/genproc.html">genproc()</a></code> emits one progression
+condition per completed case. <code>progressr</code> lets the user pick
+any handler: the default text bar in the console, an RStudio gadget,
+audible beeps, custom log lines, or any handler the user wires up via
+<code><a href="https://progressr.futureverse.org/reference/handlers.html" class="external-link">progressr::handlers()</a></code>.</p>
+<p>Without <code><a href="https://progressr.futureverse.org/reference/with_progress.html" class="external-link">with_progress()</a></code>, the integration is a complete
+no-op — zero overhead, zero visible change. <code>progressr</code> is a
+soft dependency declared in <code>Suggests</code>; the integration is
+skipped if the package is not installed.</p>
+<p>In parallel mode, signals from worker subprocesses are propagated
+back to the parent session via <code>future.apply</code>. Live
+monitoring of non-blocking runs is not yet supported (signals would
+arrive in a burst at <code><a href="../reference/await.html">await()</a></code> time rather than live during
+the run); this is on the roadmap.</p>
+</div>
+<div class="section level2">
 <h2 id="current-edges-and-roadmap">Current edges and roadmap<a class="anchor" aria-label="anchor" href="#current-edges-and-roadmap"></a>
 </h2>
 <p>Not yet in the package, but explicitly planned:</p>
@@ -671,8 +698,10 @@ mask rows are reordered.</li>
 <strong>Error replay</strong>: <code>replay(result, case_id)</code>
 to rerun one failed case in isolation.</li>
 <li>
-<strong>Monitored progress</strong>: opt-in progress reporting that
-survives non-blocking and parallel modes.</li>
+<strong>Live monitoring of non-blocking runs</strong>: today the
+<code>progressr</code> integration covers the sequential and parallel
+paths only; the non-blocking path needs a different design (collect
+progress in the background, query on demand) and is planned.</li>
 <li>
 <strong><code>cancel()</code> for non-blocking</strong>:
 backend-dependent, deferred.</li>

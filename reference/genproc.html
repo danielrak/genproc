@@ -211,6 +211,27 @@ sequential and parallel mode.</p>
 </div>
 
 <div class="section">
+<h3 id="progress-monitoring">Progress monitoring<a class="anchor" aria-label="anchor" href="#progress-monitoring"></a></h3>
+
+
+<p><code>genproc()</code> emits one <code>progressr</code> signal per completed case in
+sequential and parallel modes. The signals are no-op unless the
+calling code is wrapped in <code>progressr::with_progress(...)</code>, in
+which case the user sees a progress bar (or any other handler
+chosen via <code><a href="https://progressr.futureverse.org/reference/handlers.html" class="external-link">progressr::handlers()</a></code>):</p>
+<p></p><div class="sourceCode r"><pre><code><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://progressr.futureverse.org" class="external-link">progressr</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://progressr.futureverse.org/reference/with_progress.html" class="external-link">with_progress</a></span><span class="op">(</span></span>
+<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">my_fn</span>, <span class="va">mask</span>, parallel <span class="op">=</span> <span class="fu"><a href="../reference/parallel_spec.html">parallel_spec</a></span><span class="op">(</span>workers <span class="op">=</span> <span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre><p></p></div>
+<p>Without <code>with_progress()</code>, there is zero overhead and zero visible
+change: the integration is a hook, not a default behaviour.
+<code>progressr</code> is declared in <code>Suggests</code>; the integration is
+conditional on its installation. The non-blocking path does not
+yet emit signals — live monitoring of background runs is on the
+roadmap.</p>
+</div>
+
+<div class="section">
 <h3 id="composing-parallel-and-non-blocking">Composing parallel and non-blocking<a class="anchor" aria-label="anchor" href="#composing-parallel-and-non-blocking"></a></h3>
 
 
@@ -265,9 +286,9 @@ ignored.</p>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">result</span><span class="op">$</span><span class="va">log</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     case_id x  y success error_message traceback duration_secs</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 case_0001 1 10    TRUE          &lt;NA&gt;      &lt;NA&gt;         0.001</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 case_0002 2 20    TRUE          &lt;NA&gt;      &lt;NA&gt;         0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 case_0003 3 30    TRUE          &lt;NA&gt;      &lt;NA&gt;         0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 case_0001 1 10    TRUE          &lt;NA&gt;      &lt;NA&gt;             0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 case_0002 2 20    TRUE          &lt;NA&gt;      &lt;NA&gt;             0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 case_0003 3 30    TRUE          &lt;NA&gt;      &lt;NA&gt;             0</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># One-off parallel call: genproc installs a temporary multisession</span></span></span>
 <span class="r-in"><span><span class="co"># plan and restores the previous one on exit.</span></span></span>
