@@ -90,7 +90,7 @@ summary(result)
 #>   Cases      : 12 (4 ok, 8 error)
 #>   Success    : 33%
 #>   Total time : 0.02s
-#>   Per case   : mean 0.000s, max 0.001s (slowest: case_0003)
+#>   Per case   : mean 0.000s, max 0.001s (slowest: case_0004)
 #> 
 #> Top errors:
 #>     6x  even
