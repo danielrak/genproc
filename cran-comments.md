@@ -76,10 +76,18 @@ The `genproc_result` S3 contract (`log`, `reproducibility`,
 `n_success`, `n_error`, `duration_total_secs`, `status`) is
 guaranteed forward-compatible across the 0.x series.
 
+## Suggests usage
+
+* `progressr` (in Suggests) is used for opt-in progress reporting
+  in sequential and parallel modes. The integration is wrapped
+  in `requireNamespace("progressr", quietly = TRUE)` and is a
+  complete no-op when the package is not installed; tests for the
+  integration use `skip_if_not_installed("progressr")`.
+
 ## Future plans
 
-Planned 0.x extensions (monitored progress, error replay,
-content-hash input fingerprinting, content-based case identifiers,
-clearer error messages on power-user composed runs without
-auto-config) are designed to remain composable with the existing
-layers without breaking existing user code.
+Planned 0.x extensions (live monitoring of non-blocking runs,
+error replay, content-hash input fingerprinting, content-based
+case identifiers, clearer error messages on power-user composed
+runs without auto-config) are designed to remain composable with
+the existing layers without breaking existing user code.

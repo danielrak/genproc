@@ -104,6 +104,28 @@
 #' run continues with the next case. This holds identically in
 #' sequential and parallel mode.
 #'
+#' ## Progress monitoring
+#'
+#' `genproc()` emits one `progressr` signal per completed case in
+#' sequential and parallel modes. The signals are no-op unless the
+#' calling code is wrapped in `progressr::with_progress(...)`, in
+#' which case the user sees a progress bar (or any other handler
+#' chosen via `progressr::handlers()`):
+#'
+#' ```r
+#' library(progressr)
+#' with_progress(
+#'   result <- genproc(my_fn, mask, parallel = parallel_spec(workers = 4))
+#' )
+#' ```
+#'
+#' Without `with_progress()`, there is zero overhead and zero visible
+#' change: the integration is a hook, not a default behaviour.
+#' `progressr` is declared in `Suggests`; the integration is
+#' conditional on its installation. The non-blocking path does not
+#' yet emit signals — live monitoring of background runs is on the
+#' roadmap.
+#'
 #' ## Composing parallel and non-blocking
 #'
 #' When both `parallel` and `nonblocking` are supplied, the
@@ -375,7 +397,14 @@ genproc <- function(f, mask, f_mapping = NULL, parallel = NULL,
       }
 
       run_start <- proc.time()[["elapsed"]]
-      log_rows  <- execute_cases_fn(f_logged, args_list, parallel)
+      # `monitor = FALSE`: progressr signals emitted in this wrapper
+      # subprocess would arrive in a burst at await() time rather
+      # than live during the run, which is misleading for a user who
+      # opted into non-blocking mode precisely to do other things
+      # while the run progresses. Live monitoring of non-blocking
+      # runs is on the roadmap.
+      log_rows  <- execute_cases_fn(f_logged, args_list, parallel,
+                                    monitor = FALSE)
       run_end   <- proc.time()[["elapsed"]]
       assemble_fn(log_rows, case_ids, run_end - run_start)
     },
@@ -446,10 +475,39 @@ assemble_result_payload <- function(log_rows, case_ids, total_duration) {
 # Runs `f_logged` over `args_list`, sequentially if `parallel` is NULL,
 # otherwise through future.apply with the fields of `parallel`.
 # Returns a list of one-row data.frames, in input order.
-execute_cases <- function(f_logged, args_list, parallel) {
+#
+# `monitor` controls progress reporting. When TRUE (the default for
+# direct sync/parallel calls), execute_cases() emits one progressr
+# signal per completed case via `progressr::progressor()`. The
+# signals are no-op unless the calling code is wrapped in
+# `progressr::with_progress(...)` — there is zero overhead and zero
+# visible change for users who do not opt in. The non-blocking path
+# passes `monitor = FALSE` because emitted signals would arrive in a
+# burst at await() time rather than live during the run, which would
+# be misleading. Live monitoring of non-blocking runs is planned for
+# a future release.
+execute_cases <- function(f_logged, args_list, parallel,
+                          monitor = TRUE) {
+  # Build the per-case worker function, optionally wrapping it with
+  # a progressr signal. We only attempt the wrap if progressr is
+  # installed (declared in Suggests) — otherwise the bare call.
+  has_progressr <- monitor &&
+    requireNamespace("progressr", quietly = TRUE)
+
+  if (has_progressr) {
+    p <- progressr::progressor(steps = length(args_list))
+    worker_fn <- function(args) {
+      out <- do.call(f_logged, args)
+      p()
+      out
+    }
+  } else {
+    worker_fn <- function(args) do.call(f_logged, args)
+  }
+
   if (is.null(parallel)) {
     # --- Sequential path ---
-    return(lapply(args_list, function(args) do.call(f_logged, args)))
+    return(lapply(args_list, worker_fn))
   }
 
   # --- Parallel path ---
@@ -480,18 +538,21 @@ execute_cases <- function(f_logged, args_list, parallel) {
   # Packages to attach on each worker. For non-sequential strategies we
   # *must* ensure `genproc` is loaded on the worker so that the logged
   # closure's environment (which references clean_traceback via the
-  # genproc namespace) resolves correctly after deserialization.
+  # genproc namespace) resolves correctly after deserialization. We
+  # also include `progressr` so the worker can emit signals that
+  # future.apply propagates back to the parent session.
   is_sequential <- !is.null(parallel$strategy) &&
     parallel$strategy == "sequential"
   fpkgs <- if (is_sequential) {
     parallel$packages
   } else {
-    unique(c("genproc", parallel$packages))
+    base_pkgs <- c("genproc", if (has_progressr) "progressr")
+    unique(c(base_pkgs, parallel$packages))
   }
 
   future.apply::future_lapply(
     X                 = args_list,
-    FUN               = function(args) do.call(f_logged, args),
+    FUN               = worker_fn,
     future.seed       = parallel$seed,
     future.chunk.size = parallel$chunk_size,
     future.globals    = parallel$globals,

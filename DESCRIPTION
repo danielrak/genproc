@@ -24,6 +24,7 @@ Imports:
     future,
     future.apply,
     parallel,
+    progressr,
     stats,
     utils
 Suggests:

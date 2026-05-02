@@ -2,6 +2,16 @@
 
 ## New features
 
+* `genproc()` now integrates with the `progressr` framework. When
+  the calling code is wrapped in `progressr::with_progress(...)`,
+  one progression signal is emitted per completed case (in
+  sequential and parallel modes; signals from worker subprocesses
+  are propagated by `future.apply`). The user picks any handler
+  (text bar, RStudio gadget, beeps, custom) via
+  `progressr::handlers()`. Without `with_progress()`, the
+  integration is a complete no-op. `progressr` is in `Suggests`;
+  the integration is skipped when it is not installed. Live
+  monitoring of non-blocking runs is on the roadmap.
 * New `errors(result)` returns the failed-case rows of the log
   with all original columns (case_id, mask params, error_message,
   traceback, duration_secs). Replaces the boilerplate

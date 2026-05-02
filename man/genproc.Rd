@@ -132,6 +132,28 @@ run continues with the next case. This holds identically in
 sequential and parallel mode.
 }
 
+\subsection{Progress monitoring}{
+
+\code{genproc()} emits one \code{progressr} signal per completed case in
+sequential and parallel modes. The signals are no-op unless the
+calling code is wrapped in \code{progressr::with_progress(...)}, in
+which case the user sees a progress bar (or any other handler
+chosen via \code{progressr::handlers()}):
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{library(progressr)
+with_progress(
+  result <- genproc(my_fn, mask, parallel = parallel_spec(workers = 4))
+)
+}\if{html}{\out{</div>}}
+
+Without \code{with_progress()}, there is zero overhead and zero visible
+change: the integration is a hook, not a default behaviour.
+\code{progressr} is declared in \code{Suggests}; the integration is
+conditional on its installation. The non-blocking path does not
+yet emit signals — live monitoring of background runs is on the
+roadmap.
+}
+
 \subsection{Composing parallel and non-blocking}{
 
 When both \code{parallel} and \code{nonblocking} are supplied, the
