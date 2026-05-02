@@ -15,6 +15,20 @@
 # (result, n_signals) pair.
 count_progressions <- function(expr) {
   skip_if_not_installed("progressr")
+
+  # Force a "void" handler so the test is deterministic across
+  # session types:
+  #   * On a non-interactive session (e.g. R CMD check on CI), the
+  #     default progressr handler may decline to emit progression
+  #     conditions at all, leaving the outer withCallingHandlers
+  #     with nothing to capture (we observed n = 0 on Linux CI).
+  #   * On an interactive session, the default visual handler may
+  #     muffle the condition before our outer handler sees it.
+  # `handler_void` always emits, never renders, never muffles.
+  old_handlers <- progressr::handlers()
+  progressr::handlers("void")
+  on.exit(progressr::handlers(old_handlers), add = TRUE)
+
   n <- 0L
   res <- progressr::with_progress({
     withCallingHandlers(
