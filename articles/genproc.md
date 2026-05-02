@@ -7,6 +7,7 @@ reported, how the optional layers compose, and what the current edges
 are.
 
 ``` r
+
 library(genproc)
 ```
 
@@ -16,6 +17,7 @@ The same synthetic file-conversion task as in the README — one row per
 file, `convert()` is the per-case function.
 
 ``` r
+
 src_dir <- file.path(tempdir(), "genproc-vignette-src")
 dst_dir <- file.path(tempdir(), "genproc-vignette-dst")
 dir.create(src_dir, showWarnings = FALSE, recursive = TRUE)
@@ -46,6 +48,7 @@ result <- genproc(convert, mask)
 `result` is an S3 list with a stable, documented set of fields:
 
 ``` r
+
 class(result)
 #> [1] "genproc_result"
 names(result)
@@ -73,17 +76,18 @@ never be removed or renamed.
 Column order is designed for a human scanning a run:
 
 ``` r
+
 result$log
 #>     case_id                              src_dir src_file
-#> 1 case_0001 /tmp/RtmpmGvwTc/genproc-vignette-src    a.csv
-#> 2 case_0002 /tmp/RtmpmGvwTc/genproc-vignette-src    b.csv
-#> 3 case_0003 /tmp/RtmpmGvwTc/genproc-vignette-src    c.csv
+#> 1 case_0001 /tmp/RtmpjTnGRl/genproc-vignette-src    a.csv
+#> 2 case_0002 /tmp/RtmpjTnGRl/genproc-vignette-src    b.csv
+#> 3 case_0003 /tmp/RtmpjTnGRl/genproc-vignette-src    c.csv
 #>                                dst_dir dst_file success error_message traceback
-#> 1 /tmp/RtmpmGvwTc/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
-#> 2 /tmp/RtmpmGvwTc/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
-#> 3 /tmp/RtmpmGvwTc/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
+#> 1 /tmp/RtmpjTnGRl/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
+#> 2 /tmp/RtmpjTnGRl/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
+#> 3 /tmp/RtmpjTnGRl/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
 #>   duration_secs
-#> 1         0.000
+#> 1         0.001
 #> 2         0.001
 #> 3         0.001
 ```
@@ -95,15 +99,16 @@ of the mask can be reordered between runs.
 ### The reproducibility snapshot
 
 ``` r
+
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 20:33:38"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-05-02 18:13:18"
 #>  $ r_version    : chr "R version 4.6.0 (2026-04-24)"
 #>  $ platform     : chr "x86_64-pc-linux-gnu"
 #>  $ os           : chr "Linux 6.17.0-1010-azure"
 #>  $ locale       : chr "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C.UTF-8;LC_COLLATE=C.UTF-8;LC_MONETARY=C.UTF-8;LC_MESSAGES=C;LC_PAPER=C.U"| __truncated__
 #>  $ timezone     : chr "UTC"
-#>  $ packages     : Named chr [1:33] "0.1.0.9000" "0.6.39" "1.4.3" "2.6.1" ...
+#>  $ packages     : Named chr [1:33] "0.2.0" "0.6.39" "1.4.3" "2.6.1" ...
 #>   ..- attr(*, "names")= chr [1:33] "genproc" "digest" "desc" "R6" ...
 #>  $ mask_snapshot:'data.frame':   3 obs. of  4 variables:
 #>  $ parallel     : NULL
@@ -145,6 +150,7 @@ of upstream files. It is captured at t0 of the run, alongside the rest
 of the snapshot.
 
 ``` r
+
 str(result$reproducibility$inputs, max.level = 1)
 #> List of 3
 #>  $ method: chr "stat"
@@ -170,6 +176,7 @@ column. The `mask` used in this vignette has its paths split across
 (no separator). For a mask that holds absolute paths directly:
 
 ``` r
+
 mask_paths <- data.frame(
   csv_in = file.path(src_dir, c("a.csv", "b.csv", "c.csv")),
   stringsAsFactors = FALSE
@@ -179,9 +186,9 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                         path size               mtime
-#> 1 /tmp/RtmpmGvwTc/genproc-vignette-src/a.csv  214 2026-04-29 20:33:38
-#> 2 /tmp/RtmpmGvwTc/genproc-vignette-src/b.csv  296 2026-04-29 20:33:38
-#> 3 /tmp/RtmpmGvwTc/genproc-vignette-src/c.csv  154 2026-04-29 20:33:38
+#> 1 /tmp/RtmpjTnGRl/genproc-vignette-src/a.csv  214 2026-05-02 18:13:18
+#> 2 /tmp/RtmpjTnGRl/genproc-vignette-src/b.csv  296 2026-05-02 18:13:18
+#> 3 /tmp/RtmpjTnGRl/genproc-vignette-src/c.csv  154 2026-05-02 18:13:18
 ```
 
 #### Shared inputs are deduplicated
@@ -192,6 +199,7 @@ economical for masks where every case shares a configuration, schema, or
 lookup table.
 
 ``` r
+
 config_path <- file.path(src_dir, "config.yml")
 writeLines("threshold: 10", config_path)
 
@@ -232,6 +240,7 @@ call should clarify.
 #### Comparing runs with `diff_inputs()`
 
 ``` r
+
 # Rewrite a.csv with strictly more content (size changes)
 write.csv(iris, file.path(src_dir, "a.csv"), row.names = FALSE)
 
@@ -245,9 +254,9 @@ diff_inputs(run0, run1)
 #>   Cases affected: 1
 #> 
 #> Changed files:
-#>   /tmp/RtmpmGvwTc/genproc-vignette-src/a.csv
+#>   /tmp/RtmpjTnGRl/genproc-vignette-src/a.csv
 #>       size:  214 B -> 3.9 KB
-#>       mtime: 2026-04-29 20:33:38 -> 2026-04-29 20:33:39
+#>       mtime: 2026-05-02 18:13:18 -> 2026-05-02 18:13:19
 #> 
 #> Cases affected (use rerun_affected() to re-run):
 #>   case_0001
@@ -270,11 +279,12 @@ A case that throws does **not** stop the run. Here we delete a source
 file between two runs:
 
 ``` r
+
 file.remove(file.path(src_dir, "b.csv"))
 #> [1] TRUE
 result_broken <- genproc(convert, mask)
 #> Warning in file(file, "rt"): cannot open file
-#> '/tmp/RtmpmGvwTc/genproc-vignette-src/b.csv': No such file or directory
+#> '/tmp/RtmpjTnGRl/genproc-vignette-src/b.csv': No such file or directory
 
 result_broken$n_success
 #> [1] 2
@@ -285,6 +295,7 @@ result_broken$n_error
 The failing row carries the error message and a filtered traceback:
 
 ``` r
+
 bad <- result_broken$log[!result_broken$log$success, ]
 bad$error_message
 #> [1] "cannot open the connection"
@@ -306,6 +317,7 @@ are filtered out so the trace reads like a normal R error.
 Restore the file for subsequent sections:
 
 ``` r
+
 write.csv(head(mtcars), file.path(src_dir, "b.csv"), row.names = FALSE)
 ```
 
@@ -325,6 +337,7 @@ the default. Locally bound symbols (assignment targets, function
 formals) are protected.
 
 ``` r
+
 # An example that works for ONE specific case
 input_path  <- file.path(src_dir, "a.csv")
 output_path <- file.path(dst_dir, "a-from-example.rds")
@@ -337,10 +350,10 @@ example <- expression({
 fn <- from_example_to_function(example)
 formals(fn)
 #> $param_1
-#> [1] "/tmp/RtmpmGvwTc/genproc-vignette-src/a.csv"
+#> [1] "/tmp/RtmpjTnGRl/genproc-vignette-src/a.csv"
 #> 
 #> $param_2
-#> [1] "/tmp/RtmpmGvwTc/genproc-vignette-dst/a-from-example.rds"
+#> [1] "/tmp/RtmpjTnGRl/genproc-vignette-dst/a-from-example.rds"
 ```
 
 ### 2. `from_function_to_mask()` — function signature to mask template
@@ -351,12 +364,13 @@ mirrors its signature. You can then
 full mask.
 
 ``` r
+
 mask_template <- from_function_to_mask(fn)
 mask_template
 #>                                      param_1
-#> 1 /tmp/RtmpmGvwTc/genproc-vignette-src/a.csv
+#> 1 /tmp/RtmpjTnGRl/genproc-vignette-src/a.csv
 #>                                                   param_2
-#> 1 /tmp/RtmpmGvwTc/genproc-vignette-dst/a-from-example.rds
+#> 1 /tmp/RtmpjTnGRl/genproc-vignette-dst/a-from-example.rds
 ```
 
 ### 3. `rename_function_params()` — give the parameters domain names
@@ -366,21 +380,23 @@ informative. Rename them in place — `formals` and body are updated
 together, the function source is not edited.
 
 ``` r
+
 fn_named <- rename_function_params(
   fn, c(param_1 = "input_path", param_2 = "output_path")
 )
 formals(fn_named)
 #> $input_path
-#> [1] "/tmp/RtmpmGvwTc/genproc-vignette-src/a.csv"
+#> [1] "/tmp/RtmpjTnGRl/genproc-vignette-src/a.csv"
 #> 
 #> $output_path
-#> [1] "/tmp/RtmpmGvwTc/genproc-vignette-dst/a-from-example.rds"
+#> [1] "/tmp/RtmpjTnGRl/genproc-vignette-dst/a-from-example.rds"
 ```
 
 Putting it together: a renamed function plus a manually-built mask that
 follows the same column names.
 
 ``` r
+
 mask_built <- data.frame(
   input_path  = file.path(src_dir, c("a.csv", "b.csv", "c.csv")),
   output_path = file.path(dst_dir, c("a2.rds", "b2.rds", "c2.rds")),
@@ -403,6 +419,7 @@ your mask’s column names, `f_mapping` renames them in place without
 touching the source:
 
 ``` r
+
 # `f` uses generic names; the mask uses domain names.
 f <- function(input_dir, input_file, output_dir, output_file) {
   df <- read.csv(file.path(input_dir, input_file))
@@ -435,6 +452,7 @@ calls in the same session, installing the plan once amortizes worker
 startup:
 
 ``` r
+
 future::plan(future::multisession, workers = 6)
 
 result_1 <- genproc(convert, mask, parallel = parallel_spec())
@@ -451,6 +469,7 @@ previous plan on exit. This avoids the silent trap of `workers = N`
 being ignored because the current plan is `sequential`:
 
 ``` r
+
 genproc(convert, mask, parallel = parallel_spec(workers = 4))
 ```
 
@@ -471,6 +490,7 @@ pin the master, pass an integer: `parallel_spec(seed = 42L)`.
 ## Non-blocking execution in depth
 
 ``` r
+
 job <- genproc(convert, mask, nonblocking = nonblocking_spec())
 status(job)         # "running" or "done"
 job <- await(job)   # blocks until resolution
@@ -539,6 +559,7 @@ pass `strategy = NULL` and manage the plan themselves are not affected.
 The two optional layers are orthogonal:
 
 ``` r
+
 job <- genproc(
   convert, mask,
   parallel    = parallel_spec(workers = 6),

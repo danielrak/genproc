@@ -1,6 +1,6 @@
 # Changelog
 
-## genproc 0.2.0 (development version)
+## genproc 0.2.0
 
 ### New features
 

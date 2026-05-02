@@ -38,6 +38,7 @@ choice:
 ## Installation
 
 ``` r
+
 # install.packages("remotes")
 remotes::install_github("danielrak/genproc")
 ```
@@ -48,6 +49,7 @@ A toy file-conversion task: read a few CSVs from one directory, save
 them as RDS into another. One case per file.
 
 ``` r
+
 library(genproc)
 
 # Synthetic workspace
@@ -82,6 +84,7 @@ Every run returns a `genproc_result` — a structured list with a stable
 shape across runs:
 
 ``` r
+
 result
 #> genproc result
 #>   Status : done 
@@ -96,6 +99,7 @@ we display a subset of those columns for readability — `error_message`
 and `traceback` are `NA` on this happy path:
 
 ``` r
+
 result$log[, c("case_id", "src_file", "dst_file",
                "success", "duration_secs")]
 #>     case_id src_file dst_file success duration_secs
@@ -110,6 +114,7 @@ Below we point one row of the mask to a file that does not exist;
 README can still reference it:
 
 ``` r
+
 mask_with_missing <- mask
 mask_with_missing$src_file[2] <- "does_not_exist.csv"
 
@@ -140,6 +145,7 @@ mask. This snapshot lives inside the result — no side file to keep in
 sync:
 
 ``` r
+
 str(result$reproducibility, max.level = 1)
 #> List of 11
 #>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 17:55:37"
@@ -159,6 +165,7 @@ str(result$reproducibility, max.level = 1)
 A taste of what is captured (first few package versions):
 
 ``` r
+
 head(result$reproducibility$packages, 5)
 #>  genproc compiler  fastmap      cli    tools 
 #>  "0.1.0"  "4.5.1"  "1.2.0"  "3.6.5"  "4.5.1"
@@ -178,6 +185,7 @@ with `input_cols = c(...)` (force) or `skip_input_cols = c(...)`
 (exclude).
 
 ``` r
+
 mask_paths <- data.frame(
   csv_in = file.path(src_dir, c("a.csv", "b.csv", "c.csv")),
   stringsAsFactors = FALSE
@@ -201,6 +209,7 @@ compares two runs and tells you which referenced files have changed
 since the first one:
 
 ``` r
+
 # Rewrite a.csv with strictly more content (size changes)
 write.csv(iris, file.path(src_dir, "a.csv"), row.names = FALSE)
 
@@ -228,6 +237,7 @@ Dispatch cases across workers by passing a
 [`parallel_spec()`](https://danielrak.github.io/genproc/reference/parallel_spec.md):
 
 ``` r
+
 # Four workers, a temporary multisession plan, restored on exit
 result <- genproc(
   convert, mask,
@@ -254,6 +264,7 @@ without a strategy and your current plan is used unchanged.
 Return immediately, keep the console, collect later:
 
 ``` r
+
 job <- genproc(
   convert, mask,
   nonblocking = nonblocking_spec()
@@ -270,6 +281,7 @@ can be composed with
 — the non-blocking wrapper envelops the parallel dispatch:
 
 ``` r
+
 job <- genproc(
   convert, mask,
   parallel    = parallel_spec(workers = 4),

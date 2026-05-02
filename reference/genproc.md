@@ -220,9 +220,9 @@ result <- genproc(
 )
 result$log
 #>     case_id x  y success error_message traceback duration_secs
-#> 1 case_0001 1 10    TRUE          <NA>      <NA>             0
-#> 2 case_0002 2 20    TRUE          <NA>      <NA>             0
-#> 3 case_0003 3 30    TRUE          <NA>      <NA>             0
+#> 1 case_0001 1 10    TRUE          <NA>      <NA>         0.001
+#> 2 case_0002 2 20    TRUE          <NA>      <NA>         0.000
+#> 3 case_0003 3 30    TRUE          <NA>      <NA>         0.000
 
 # One-off parallel call: genproc installs a temporary multisession
 # plan and restores the previous one on exit.
