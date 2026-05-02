@@ -185,11 +185,13 @@ user sees a progress bar (or any other handler chosen via
       result <- genproc(my_fn, mask, parallel = parallel_spec(workers = 4))
     )
 
-Without `with_progress()`, there is zero overhead and zero visible
-change: the integration is a hook, not a default behaviour. `progressr`
-is declared in `Suggests`; the integration is conditional on its
-installation. The non-blocking path does not yet emit signals — live
-monitoring of background runs is on the roadmap.
+Without
+[`with_progress()`](https://progressr.futureverse.org/reference/with_progress.html),
+there is zero overhead and zero visible change: the integration is a
+hook, not a default behaviour. `progressr` is declared in `Suggests`;
+the integration is conditional on its installation. The non-blocking
+path does not yet emit signals — live monitoring of background runs is
+on the roadmap.
 
 ### Composing parallel and non-blocking
 

@@ -52,20 +52,22 @@
 </h1></div>
 <!-- badges: start -->
 
-<p><code>genproc</code> turns one-off iterative R procedures (<code>for</code>, <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code>, <code><a href="https://purrr.tidyverse.org/reference/pmap.html" class="external-link">purrr::pmap()</a></code>, …) into production-grade workflows by wrapping them with orthogonal, composable execution layers. The goal is to make the transition from <em>“a script that works on one case”</em> to <em>“a system that runs reliably on many cases”</em> an architectural step, not an improvised rewrite.</p>
-<p>Two layers are always active and cannot be disabled:</p>
+<p><code>genproc</code> turns one-off iterative R procedures (<code>for</code>, <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code>, <code><a href="https://purrr.tidyverse.org/reference/pmap.html" class="external-link">purrr::pmap()</a></code>, …) into production-grade workflows by wrapping them with orthogonal, composable execution layers: <strong>Logged</strong> and <strong>Reproducibility</strong> are always active; <strong>Parallel</strong>, <strong>Non-blocking</strong>, and <strong>Monitoring</strong> compose on top. The goal is to make the transition from <em>“a script that works on one case”</em> to <em>“a system that runs reliably on many cases”</em> an architectural step, not an improvised rewrite.</p>
+<p>The two always-active layers:</p>
 <ul>
 <li>
 <strong>Logged</strong> — each case produces a structured log row with the real traceback (captured via <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">withCallingHandlers()</a></code>) and per-case timing.</li>
 <li>
-<strong>Reproducibility</strong> — each run records the R version, loaded package versions, execution environment, the exact iteration mask, and the spec of any optional layer used, so that two runs can be compared and any change in execution parameters is auditable.</li>
+<strong>Reproducibility</strong> — each run records the R version, loaded package versions, execution environment, the exact iteration mask, the spec of any optional layer used, and a stat-based fingerprint of every input file referenced by the mask, so that two runs can be compared and any silent input drift detected.</li>
 </ul>
-<p>Two optional layers can be composed with the defaults, at the caller’s choice:</p>
+<p>The three optional layers:</p>
 <ul>
 <li>
 <strong>Parallel</strong> execution via the <code>future</code> ecosystem (<code><a href="https://future.apply.futureverse.org/reference/future_lapply.html" class="external-link">future.apply::future_lapply()</a></code>).</li>
 <li>
 <strong>Non-blocking</strong> execution: <code><a href="reference/genproc.html">genproc()</a></code> returns immediately with a <code>genproc_result</code> of status <code>"running"</code> while the run continues in a background future. Poll with <code><a href="reference/status.html">status()</a></code>, block with <code><a href="reference/await.html">await()</a></code>.</li>
+<li>
+<strong>Monitoring</strong> via <code>progressr</code> — opt-in progress reporting that emits one progression signal per completed case in sequential and parallel modes.</li>
 </ul>
 <p><code>genproc</code> has <strong>zero Shiny dependency</strong>. A companion package (<code>genprocShiny</code>) will later build a UI on top of these functions.</p>
 <div class="section level2">
@@ -113,7 +115,7 @@
 <code class="sourceCode R"><span><span class="va">result</span></span>
 <span><span class="co">#&gt; genproc result</span></span>
 <span><span class="co">#&gt;   Status   : done </span></span>
-<span><span class="co">#&gt;   Started  : 2026-05-02 21:03:43 CEST </span></span>
+<span><span class="co">#&gt;   Started  : 2026-05-02 21:50:03 CEST </span></span>
 <span><span class="co">#&gt;   Mode     : sequential </span></span>
 <span><span class="co">#&gt;   Cases    : 3 ( 3 ok, 0 error )</span></span>
 <span><span class="co">#&gt;   Duration : 0.06 secs</span></span></code></pre></div>
@@ -122,9 +124,9 @@
 <code class="sourceCode R"><span><span class="va">result</span><span class="op">$</span><span class="va">log</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"case_id"</span>, <span class="st">"src_file"</span>, <span class="st">"dst_file"</span>,</span>
 <span>               <span class="st">"success"</span>, <span class="st">"duration_secs"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;     case_id src_file dst_file success duration_secs</span></span>
-<span><span class="co">#&gt; 1 case_0001    a.csv    a.rds    TRUE             0</span></span>
-<span><span class="co">#&gt; 2 case_0002    b.csv    b.rds    TRUE             0</span></span>
-<span><span class="co">#&gt; 3 case_0003    c.csv    c.rds    TRUE             0</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 case_0001    a.csv    a.rds    TRUE          0.03</span></span>
+<span><span class="co">#&gt; 2 case_0002    b.csv    b.rds    TRUE          0.01</span></span>
+<span><span class="co">#&gt; 3 case_0003    c.csv    c.rds    TRUE          0.00</span></span></code></pre></div>
 <p>If a case fails, the run continues — the error is captured, not thrown. Below we point one row of the mask to a file that does not exist; <code>b.csv</code> itself is left untouched on disk so subsequent sections of this README can still reference it:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mask_with_missing</span> <span class="op">&lt;-</span> <span class="va">mask</span></span>
@@ -132,10 +134,9 @@
 <span></span>
 <span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask_with_missing</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in file(file, "rt"): cannot open file</span></span>
-<span><span class="co">#&gt; 'C:\Users\rheri\AppData\Local\Temp\RtmpC4WWVN/src/does_not_exist.csv': No such</span></span>
+<span><span class="co">#&gt; 'C:\Users\rheri\AppData\Local\Temp\RtmpeQ8Oil/src/does_not_exist.csv': No such</span></span>
 <span><span class="co">#&gt; file or directory</span></span>
-<span><span class="va">result2</span><span class="op">$</span><span class="va">log</span><span class="op">[</span><span class="op">!</span><span class="va">result2</span><span class="op">$</span><span class="va">log</span><span class="op">$</span><span class="va">success</span>,</span>
-<span>            <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"case_id"</span>, <span class="st">"src_file"</span>, <span class="st">"error_message"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="fu"><a href="reference/errors.html">errors</a></span><span class="op">(</span><span class="va">result2</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"case_id"</span>, <span class="st">"src_file"</span>, <span class="st">"error_message"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;     case_id           src_file              error_message</span></span>
 <span><span class="co">#&gt; 2 case_0002 does_not_exist.csv cannot open the connection</span></span>
 <span><span class="va">result2</span><span class="op">$</span><span class="va">n_success</span></span>
@@ -145,13 +146,47 @@
 <p>The traceback column holds the real R call stack of the failing case (filtered for the <code>tryCatch</code>/<code>withCallingHandlers</code> machinery), so debugging a failed case reads like a normal R error.</p>
 </div>
 <div class="section level2">
+<h2 id="inspect-and-act-on-a-result">Inspect and act on a result<a class="anchor" aria-label="anchor" href="#inspect-and-act-on-a-result"></a>
+</h2>
+<p>Three helpers digest a result without touching <code>result$log</code> directly:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/errors.html">errors</a></span><span class="op">(</span><span class="va">result2</span><span class="op">)</span>        <span class="co"># data.frame of failed cases only</span></span>
+<span><span class="co">#&gt;     case_id                                                src_dir</span></span>
+<span><span class="co">#&gt; 2 case_0002 C:\\Users\\rheri\\AppData\\Local\\Temp\\RtmpeQ8Oil/src</span></span>
+<span><span class="co">#&gt;             src_file                                                dst_dir</span></span>
+<span><span class="co">#&gt; 2 does_not_exist.csv C:\\Users\\rheri\\AppData\\Local\\Temp\\RtmpeQ8Oil/dst</span></span>
+<span><span class="co">#&gt;   dst_file success              error_message</span></span>
+<span><span class="co">#&gt; 2    b.rds   FALSE cannot open the connection</span></span>
+<span><span class="co">#&gt;                                                                                                                                                                                                                    traceback</span></span>
+<span><span class="co">#&gt; 2 1. process_file(text, output)\n2. read.csv(file.path(src_dir, src_file))\n3. read.table(file = file, header = header, sep = sep, quote = quote, dec = dec, fill = fill, comment.char = comment.ch ...\n4. file(file, "rt")</span></span>
+<span><span class="co">#&gt;   duration_secs</span></span>
+<span><span class="co">#&gt; 2             0</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">result2</span><span class="op">)</span>       <span class="co"># printable digest: status, success rate,</span></span>
+<span><span class="co">#&gt; genproc result summary</span></span>
+<span><span class="co">#&gt;   Status     : done</span></span>
+<span><span class="co">#&gt;   Cases      : 3 (2 ok, 1 error)</span></span>
+<span><span class="co">#&gt;   Success    : 67%</span></span>
+<span><span class="co">#&gt;   Total time : 0.00s</span></span>
+<span><span class="co">#&gt;   Per case   : mean 0.000s, max 0.000s (slowest: case_0001)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Top errors:</span></span>
+<span><span class="co">#&gt;     1x  cannot open the connection</span></span>
+<span>                       <span class="co"># duration stats, top recurring errors</span></span></code></pre></div>
+<p>Two more close the loop by re-running a targeted subset:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/rerun_failed.html">rerun_failed</a></span><span class="op">(</span><span class="va">result2</span>, <span class="va">convert</span><span class="op">)</span>            <span class="co"># only failed cases</span></span>
+<span><span class="fu"><a href="reference/rerun_affected.html">rerun_affected</a></span><span class="op">(</span><span class="va">result0</span>, <span class="va">diff</span>, <span class="va">convert</span><span class="op">)</span>    <span class="co"># only cases referenced</span></span>
+<span>                                          <span class="co"># by changed inputs (see</span></span>
+<span>                                          <span class="co"># next section)</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="the-reproducibility-snapshot">The reproducibility snapshot<a class="anchor" aria-label="anchor" href="#the-reproducibility-snapshot"></a>
 </h2>
 <p><code>result$reproducibility</code> is a plain list recording the R version, OS, timezone, loaded package versions, the exact mask used, the specs of any optional layer, and a fingerprint of every input file referenced by the mask. This snapshot lives inside the result — no side file to keep in sync:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">reproducibility</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 11</span></span>
-<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-05-02 21:03:43"</span></span>
+<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-05-02 21:50:03"</span></span>
 <span><span class="co">#&gt;  $ r_version    : chr "R version 4.5.1 (2025-06-13 ucrt)"</span></span>
 <span><span class="co">#&gt;  $ platform     : chr "x86_64-w64-mingw32"</span></span>
 <span><span class="co">#&gt;  $ os           : chr "Windows 10 x64"</span></span>
@@ -164,7 +199,7 @@
 <span><span class="co">#&gt;  $ nonblocking  : NULL</span></span>
 <span><span class="co">#&gt;  $ inputs       :List of 3</span></span></code></pre></div>
 <p>A taste of what is captured (first few package versions):</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">reproducibility</span><span class="op">$</span><span class="va">packages</span>, <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  genproc compiler  fastmap      cli    tools </span></span>
 <span><span class="co">#&gt;  "0.2.0"  "4.5.1"  "1.2.0"  "3.6.5"  "4.5.1"</span></span></code></pre></div>
@@ -174,7 +209,7 @@
 </h2>
 <p><code>result$reproducibility$inputs</code> records the size and mtime of every input file the mask refers to. The intent is to flag the most common reproducibility failure: re-running the same code on the same paths after an upstream file has been silently rewritten.</p>
 <p>genproc detects input columns automatically: any character column of the mask whose values are existing files is treated as such. Pass <code>track_inputs = FALSE</code> to skip the capture, or override the heuristic with <code>input_cols = c(...)</code> (force) or <code>skip_input_cols = c(...)</code> (exclude).</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mask_paths</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  csv_in <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">src_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a.csv"</span>, <span class="st">"b.csv"</span>, <span class="st">"c.csv"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -184,15 +219,15 @@
 <span><span class="va">run0</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">do_one</span>, <span class="va">mask_paths</span><span class="op">)</span></span>
 <span><span class="va">run0</span><span class="op">$</span><span class="va">reproducibility</span><span class="op">$</span><span class="va">inputs</span><span class="op">$</span><span class="va">files</span></span>
 <span><span class="co">#&gt;                                                     path size</span></span>
-<span><span class="co">#&gt; 1 C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/a.csv  221</span></span>
-<span><span class="co">#&gt; 2 C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/b.csv  303</span></span>
-<span><span class="co">#&gt; 3 C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/c.csv  161</span></span>
+<span><span class="co">#&gt; 1 C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/a.csv  221</span></span>
+<span><span class="co">#&gt; 2 C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/b.csv  303</span></span>
+<span><span class="co">#&gt; 3 C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/c.csv  161</span></span>
 <span><span class="co">#&gt;                 mtime</span></span>
-<span><span class="co">#&gt; 1 2026-05-02 21:03:43</span></span>
-<span><span class="co">#&gt; 2 2026-05-02 21:03:43</span></span>
-<span><span class="co">#&gt; 3 2026-05-02 21:03:43</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 2026-05-02 21:50:03</span></span>
+<span><span class="co">#&gt; 2 2026-05-02 21:50:03</span></span>
+<span><span class="co">#&gt; 3 2026-05-02 21:50:03</span></span></code></pre></div>
 <p><code><a href="reference/diff_inputs.html">diff_inputs()</a></code> compares two runs and tells you which referenced files have changed since the first one:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Rewrite a.csv with strictly more content (size changes)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">iris</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">src_dir</span>, <span class="st">"a.csv"</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
@@ -206,9 +241,9 @@
 <span><span class="co">#&gt;   Cases affected: 1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Changed files:</span></span>
-<span><span class="co">#&gt;   C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/a.csv</span></span>
+<span><span class="co">#&gt;   C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/a.csv</span></span>
 <span><span class="co">#&gt;       size:  221 B -&gt; 4.1 KB</span></span>
-<span><span class="co">#&gt;       mtime: 2026-05-02 21:03:43 -&gt; 2026-05-02 21:03:43</span></span>
+<span><span class="co">#&gt;       mtime: 2026-05-02 21:50:03 -&gt; 2026-05-02 21:50:03</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Cases affected (use rerun_affected() to re-run):</span></span>
 <span><span class="co">#&gt;   case_0001</span></span></code></pre></div>
@@ -218,7 +253,7 @@
 <h2 id="parallel-execution">Parallel execution<a class="anchor" aria-label="anchor" href="#parallel-execution"></a>
 </h2>
 <p>Dispatch cases across workers by passing a <code><a href="reference/parallel_spec.html">parallel_spec()</a></code>:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Four workers, a temporary multisession plan, restored on exit</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span></span>
 <span>  <span class="va">convert</span>, <span class="va">mask</span>,</span>
@@ -231,7 +266,7 @@
 <h2 id="non-blocking-execution">Non-blocking execution<a class="anchor" aria-label="anchor" href="#non-blocking-execution"></a>
 </h2>
 <p>Return immediately, keep the console, collect later:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span></span>
 <span>  <span class="va">convert</span>, <span class="va">mask</span>,</span>
 <span>  nonblocking <span class="op">=</span> <span class="fu"><a href="reference/nonblocking_spec.html">nonblocking_spec</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -241,7 +276,7 @@
 <span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/await.html">await</a></span><span class="op">(</span><span class="va">job</span><span class="op">)</span>  <span class="co"># blocks until resolution</span></span>
 <span><span class="va">job</span><span class="op">$</span><span class="va">log</span></span></code></pre></div>
 <p><code><a href="reference/nonblocking_spec.html">nonblocking_spec()</a></code> can be composed with <code><a href="reference/parallel_spec.html">parallel_spec()</a></code> — the non-blocking wrapper envelops the parallel dispatch:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">job</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span></span>
 <span>  <span class="va">convert</span>, <span class="va">mask</span>,</span>
 <span>  parallel    <span class="op">=</span> <span class="fu"><a href="reference/parallel_spec.html">parallel_spec</a></span><span class="op">(</span>workers <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>,</span>
@@ -249,10 +284,22 @@
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="progress-monitoring">Progress monitoring<a class="anchor" aria-label="anchor" href="#progress-monitoring"></a>
+</h2>
+<p>Wrap a run in <code><a href="https://progressr.futureverse.org/reference/with_progress.html" class="external-link">progressr::with_progress()</a></code> to opt in to per-case progress reporting:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://progressr.futureverse.org" class="external-link">progressr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://progressr.futureverse.org/reference/with_progress.html" class="external-link">with_progress</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
+<p>Pick a renderer once per session with <code><a href="https://progressr.futureverse.org/reference/handlers.html" class="external-link">progressr::handlers()</a></code> (default <code>"txtprogressbar"</code>, alternatives include <code>"progress"</code> and <code>"cli"</code>). Without <code><a href="https://progressr.futureverse.org/reference/with_progress.html" class="external-link">with_progress()</a></code>, or without <code>progressr</code> installed, the integration is a complete no-op. Live monitoring of non-blocking runs is on the roadmap.</p>
+</div>
+<div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>
-<p>Lifecycle: <strong>experimental</strong>. The four execution layers (logged, reproducibility, parallel, non-blocking) and the <code>genproc_result</code> contract are committed to forward compatibility across the 0.x series — existing fields are guaranteed not to be removed or renamed. New fields and new optional layers may be added.</p>
-<p>The 0.1.0 release is the first public submission and is not yet on CRAN. Install from GitHub for now (see above).</p>
+<p>Lifecycle: <strong>experimental</strong>. The five execution layers (logged, reproducibility, parallel, non-blocking, monitoring) and the <code>genproc_result</code> contract are committed to forward compatibility across the 0.x series — existing fields are guaranteed not to be removed or renamed. New fields and new optional layers may be added.</p>
+<p>The 0.2.0 release is the first public submission and is not yet on CRAN. Install from GitHub for now (see above).</p>
 </div>
 <div class="section level2">
 <h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>

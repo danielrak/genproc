@@ -223,7 +223,7 @@ chosen via <code><a href="https://progressr.futureverse.org/reference/handlers.h
 <span><span class="fu"><a href="https://progressr.futureverse.org/reference/with_progress.html" class="external-link">with_progress</a></span><span class="op">(</span></span>
 <span>  <span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">my_fn</span>, <span class="va">mask</span>, parallel <span class="op">=</span> <span class="fu"><a href="../reference/parallel_spec.html">parallel_spec</a></span><span class="op">(</span>workers <span class="op">=</span> <span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre><p></p></div>
-<p>Without <code>with_progress()</code>, there is zero overhead and zero visible
+<p>Without <code><a href="https://progressr.futureverse.org/reference/with_progress.html" class="external-link">with_progress()</a></code>, there is zero overhead and zero visible
 change: the integration is a hook, not a default behaviour.
 <code>progressr</code> is declared in <code>Suggests</code>; the integration is
 conditional on its installation. The non-blocking path does not

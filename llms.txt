@@ -4,23 +4,25 @@
 [`lapply()`](https://rdrr.io/r/base/lapply.html),
 [`purrr::pmap()`](https://purrr.tidyverse.org/reference/pmap.html), …)
 into production-grade workflows by wrapping them with orthogonal,
-composable execution layers. The goal is to make the transition from *“a
-script that works on one case”* to *“a system that runs reliably on many
-cases”* an architectural step, not an improvised rewrite.
+composable execution layers: **Logged** and **Reproducibility** are
+always active; **Parallel**, **Non-blocking**, and **Monitoring**
+compose on top. The goal is to make the transition from *“a script that
+works on one case”* to *“a system that runs reliably on many cases”* an
+architectural step, not an improvised rewrite.
 
-Two layers are always active and cannot be disabled:
+The two always-active layers:
 
 - **Logged** — each case produces a structured log row with the real
   traceback (captured via
   [`withCallingHandlers()`](https://rdrr.io/r/base/conditions.html)) and
   per-case timing.
 - **Reproducibility** — each run records the R version, loaded package
-  versions, execution environment, the exact iteration mask, and the
-  spec of any optional layer used, so that two runs can be compared and
-  any change in execution parameters is auditable.
+  versions, execution environment, the exact iteration mask, the spec of
+  any optional layer used, and a stat-based fingerprint of every input
+  file referenced by the mask, so that two runs can be compared and any
+  silent input drift detected.
 
-Two optional layers can be composed with the defaults, at the caller’s
-choice:
+The three optional layers:
 
 - **Parallel** execution via the `future` ecosystem
   ([`future.apply::future_lapply()`](https://future.apply.futureverse.org/reference/future_lapply.html)).
@@ -31,6 +33,9 @@ choice:
   [`status()`](https://danielrak.github.io/genproc/reference/status.md),
   block with
   [`await()`](https://danielrak.github.io/genproc/reference/await.md).
+- **Monitoring** via `progressr` — opt-in progress reporting that emits
+  one progression signal per completed case in sequential and parallel
+  modes.
 
 `genproc` has **zero Shiny dependency**. A companion package
 (`genprocShiny`) will later build a UI on top of these functions.
@@ -88,7 +93,7 @@ shape across runs:
 result
 #> genproc result
 #>   Status   : done 
-#>   Started  : 2026-05-02 21:03:43 CEST 
+#>   Started  : 2026-05-02 21:50:03 CEST 
 #>   Mode     : sequential 
 #>   Cases    : 3 ( 3 ok, 0 error )
 #>   Duration : 0.06 secs
@@ -105,9 +110,9 @@ and `traceback` are `NA` on this happy path:
 result$log[, c("case_id", "src_file", "dst_file",
                "success", "duration_secs")]
 #>     case_id src_file dst_file success duration_secs
-#> 1 case_0001    a.csv    a.rds    TRUE             0
-#> 2 case_0002    b.csv    b.rds    TRUE             0
-#> 3 case_0003    c.csv    c.rds    TRUE             0
+#> 1 case_0001    a.csv    a.rds    TRUE          0.03
+#> 2 case_0002    b.csv    b.rds    TRUE          0.01
+#> 3 case_0003    c.csv    c.rds    TRUE          0.00
 ```
 
 If a case fails, the run continues — the error is captured, not thrown.
@@ -122,10 +127,9 @@ mask_with_missing$src_file[2] <- "does_not_exist.csv"
 
 result2 <- genproc(convert, mask_with_missing)
 #> Warning in file(file, "rt"): cannot open file
-#> 'C:\Users\rheri\AppData\Local\Temp\RtmpC4WWVN/src/does_not_exist.csv': No such
+#> 'C:\Users\rheri\AppData\Local\Temp\RtmpeQ8Oil/src/does_not_exist.csv': No such
 #> file or directory
-result2$log[!result2$log$success,
-            c("case_id", "src_file", "error_message")]
+errors(result2)[, c("case_id", "src_file", "error_message")]
 #>     case_id           src_file              error_message
 #> 2 case_0002 does_not_exist.csv cannot open the connection
 result2$n_success
@@ -137,6 +141,46 @@ result2$n_error
 The traceback column holds the real R call stack of the failing case
 (filtered for the `tryCatch`/`withCallingHandlers` machinery), so
 debugging a failed case reads like a normal R error.
+
+## Inspect and act on a result
+
+Three helpers digest a result without touching `result$log` directly:
+
+``` r
+
+errors(result2)        # data.frame of failed cases only
+#>     case_id                                                src_dir
+#> 2 case_0002 C:\\Users\\rheri\\AppData\\Local\\Temp\\RtmpeQ8Oil/src
+#>             src_file                                                dst_dir
+#> 2 does_not_exist.csv C:\\Users\\rheri\\AppData\\Local\\Temp\\RtmpeQ8Oil/dst
+#>   dst_file success              error_message
+#> 2    b.rds   FALSE cannot open the connection
+#>                                                                                                                                                                                                                    traceback
+#> 2 1. process_file(text, output)\n2. read.csv(file.path(src_dir, src_file))\n3. read.table(file = file, header = header, sep = sep, quote = quote, dec = dec, fill = fill, comment.char = comment.ch ...\n4. file(file, "rt")
+#>   duration_secs
+#> 2             0
+summary(result2)       # printable digest: status, success rate,
+#> genproc result summary
+#>   Status     : done
+#>   Cases      : 3 (2 ok, 1 error)
+#>   Success    : 67%
+#>   Total time : 0.00s
+#>   Per case   : mean 0.000s, max 0.000s (slowest: case_0001)
+#> 
+#> Top errors:
+#>     1x  cannot open the connection
+                       # duration stats, top recurring errors
+```
+
+Two more close the loop by re-running a targeted subset:
+
+``` r
+
+rerun_failed(result2, convert)            # only failed cases
+rerun_affected(result0, diff, convert)    # only cases referenced
+                                          # by changed inputs (see
+                                          # next section)
+```
 
 ## The reproducibility snapshot
 
@@ -150,7 +194,7 @@ sync:
 
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-05-02 21:03:43"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-05-02 21:50:03"
 #>  $ r_version    : chr "R version 4.5.1 (2025-06-13 ucrt)"
 #>  $ platform     : chr "x86_64-w64-mingw32"
 #>  $ os           : chr "Windows 10 x64"
@@ -197,13 +241,13 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                                     path size
-#> 1 C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/a.csv  221
-#> 2 C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/b.csv  303
-#> 3 C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/c.csv  161
+#> 1 C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/a.csv  221
+#> 2 C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/b.csv  303
+#> 3 C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/c.csv  161
 #>                 mtime
-#> 1 2026-05-02 21:03:43
-#> 2 2026-05-02 21:03:43
-#> 3 2026-05-02 21:03:43
+#> 1 2026-05-02 21:50:03
+#> 2 2026-05-02 21:50:03
+#> 3 2026-05-02 21:50:03
 ```
 
 [`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
@@ -225,9 +269,9 @@ diff_inputs(run0, run1)
 #>   Cases affected: 1
 #> 
 #> Changed files:
-#>   C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/a.csv
+#>   C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/a.csv
 #>       size:  221 B -> 4.1 KB
-#>       mtime: 2026-05-02 21:03:43 -> 2026-05-02 21:03:43
+#>       mtime: 2026-05-02 21:50:03 -> 2026-05-02 21:50:03
 #> 
 #> Cases affected (use rerun_affected() to re-run):
 #>   case_0001
@@ -295,15 +339,38 @@ job <- genproc(
 )
 ```
 
+## Progress monitoring
+
+Wrap a run in
+[`progressr::with_progress()`](https://progressr.futureverse.org/reference/with_progress.html)
+to opt in to per-case progress reporting:
+
+``` r
+
+library(progressr)
+
+with_progress({
+  result <- genproc(convert, mask)
+})
+```
+
+Pick a renderer once per session with
+[`progressr::handlers()`](https://progressr.futureverse.org/reference/handlers.html)
+(default `"txtprogressbar"`, alternatives include `"progress"` and
+`"cli"`). Without
+[`with_progress()`](https://progressr.futureverse.org/reference/with_progress.html),
+or without `progressr` installed, the integration is a complete no-op.
+Live monitoring of non-blocking runs is on the roadmap.
+
 ## Status
 
-Lifecycle: **experimental**. The four execution layers (logged,
-reproducibility, parallel, non-blocking) and the `genproc_result`
-contract are committed to forward compatibility across the 0.x series —
-existing fields are guaranteed not to be removed or renamed. New fields
-and new optional layers may be added.
+Lifecycle: **experimental**. The five execution layers (logged,
+reproducibility, parallel, non-blocking, monitoring) and the
+`genproc_result` contract are committed to forward compatibility across
+the 0.x series — existing fields are guaranteed not to be removed or
+renamed. New fields and new optional layers may be added.
 
-The 0.1.0 release is the first public submission and is not yet on CRAN.
+The 0.2.0 release is the first public submission and is not yet on CRAN.
 Install from GitHub for now (see above).
 
 ## Learn more
