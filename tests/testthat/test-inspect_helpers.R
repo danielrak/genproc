@@ -133,11 +133,16 @@ test_that("summary print method handles non-materialized result", {
 test_that("duration_stats records the slowest case", {
   fast <- function(x) x
   slow_one <- function(x) {
-    if (x == 3) Sys.sleep(0.05)
+    # Sleep generously: Windows Sys.sleep() snaps to the system
+    # timer quantum (~15.6 ms), so a 50 ms sleep can actually
+    # measure < 40 ms on a fast Windows runner. Use 100 ms with a
+    # 20 ms lower bound to keep the assertion meaningful without
+    # being flaky.
+    if (x == 3) Sys.sleep(0.1)
     x
   }
   r <- genproc(slow_one, data.frame(x = 1:5))
   s <- summary(r)
   expect_equal(s$duration_stats$slowest_case_id, "case_0003")
-  expect_true(s$duration_stats$max >= 0.04)
+  expect_gt(s$duration_stats$max, 0.02)
 })
