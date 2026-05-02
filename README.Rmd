@@ -267,4 +267,4 @@ patterns, and roadmap.
 
 ## License
 
-MIT. See [LICENSE.md](LICENSE.md).
+MIT. See [LICENSE.md](https://github.com/danielrak/genproc/blob/master/LICENSE.md).

@@ -1,13 +1,14 @@
 ## Test environments
 
-* local Windows 10 install, R 4.5.x — passed (713 tests)
+* local Windows 10 install, R 4.5.x — passed (723 tests)
 * GitHub Actions:
   * ubuntu-latest (release) — passed
   * ubuntu-latest (oldrel-1) — passed
   * ubuntu-latest (devel) — passed
   * macos-latest (release) — passed
   * windows-latest (release) — passed
-* win-builder (devel and release) — to be confirmed before submission
+* win-builder release (R 4.6.0, 2026-05-02) — 1 NOTE (see below)
+* win-builder devel — to be confirmed before submission
 * R-hub (Linux / Windows / macOS / nosuggests / ubuntu-next) — to be
   confirmed before submission
 
@@ -16,6 +17,10 @@
 0 errors | 0 warnings | 1 note
 
 * This is a new submission.
+* "Possibly misspelled words in DESCRIPTION: composable, traceback"
+  — both are correct technical English used throughout the package
+  documentation; "composable" describes the orthogonal layer design
+  and "traceback" is the standard R term (`base::traceback()`).
 * Local checks may additionally emit "checking for future file
   timestamps ... NOTE: unable to verify current time" when the
   external timestamp verification service is unreachable. The note

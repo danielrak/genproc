@@ -89,9 +89,11 @@ shape across runs:
 ``` r
 result
 #> genproc result
-#>   Status : done 
-#>   Cases  : 3 ( 3 ok, 0 error )
-#>   Duration: 0.06 secs
+#>   Status   : done 
+#>   Started  : 2026-05-02 21:03:43 CEST 
+#>   Mode     : sequential 
+#>   Cases    : 3 ( 3 ok, 0 error )
+#>   Duration : 0.06 secs
 ```
 
 The `log` data.frame holds one row per case, with `case_id`, the mask
@@ -104,9 +106,9 @@ and `traceback` are `NA` on this happy path:
 result$log[, c("case_id", "src_file", "dst_file",
                "success", "duration_secs")]
 #>     case_id src_file dst_file success duration_secs
-#> 1 case_0001    a.csv    a.rds    TRUE          0.00
-#> 2 case_0002    b.csv    b.rds    TRUE          0.02
-#> 3 case_0003    c.csv    c.rds    TRUE          0.00
+#> 1 case_0001    a.csv    a.rds    TRUE             0
+#> 2 case_0002    b.csv    b.rds    TRUE             0
+#> 3 case_0003    c.csv    c.rds    TRUE             0
 ```
 
 If a case fails, the run continues — the error is captured, not thrown.
@@ -120,7 +122,7 @@ mask_with_missing$src_file[2] <- "does_not_exist.csv"
 
 result2 <- genproc(convert, mask_with_missing)
 #> Warning in file(file, "rt"): cannot open file
-#> 'C:\Users\rheri\AppData\Local\Temp\RtmpS2TaF4/src/does_not_exist.csv': No such
+#> 'C:\Users\rheri\AppData\Local\Temp\RtmpC4WWVN/src/does_not_exist.csv': No such
 #> file or directory
 result2$log[!result2$log$success,
             c("case_id", "src_file", "error_message")]
@@ -147,13 +149,13 @@ sync:
 ``` r
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-04-29 17:55:37"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-05-02 21:03:43"
 #>  $ r_version    : chr "R version 4.5.1 (2025-06-13 ucrt)"
 #>  $ platform     : chr "x86_64-w64-mingw32"
 #>  $ os           : chr "Windows 10 x64"
 #>  $ locale       : chr "LC_COLLATE=French_France.utf8;LC_CTYPE=French_France.utf8;LC_MONETARY=French_France.utf8;LC_NUMERIC=C;LC_TIME=F"| __truncated__
 #>  $ timezone     : chr "Europe/Paris"
-#>  $ packages     : Named chr [1:22] "0.1.0" "4.5.1" "1.2.0" "3.6.5" ...
+#>  $ packages     : Named chr [1:22] "0.2.0" "4.5.1" "1.2.0" "3.6.5" ...
 #>   ..- attr(*, "names")= chr [1:22] "genproc" "compiler" "fastmap" "cli" ...
 #>  $ mask_snapshot:'data.frame':   3 obs. of  4 variables:
 #>  $ parallel     : NULL
@@ -166,7 +168,7 @@ A taste of what is captured (first few package versions):
 ``` r
 head(result$reproducibility$packages, 5)
 #>  genproc compiler  fastmap      cli    tools 
-#>  "0.1.0"  "4.5.1"  "1.2.0"  "3.6.5"  "4.5.1"
+#>  "0.2.0"  "4.5.1"  "1.2.0"  "3.6.5"  "4.5.1"
 ```
 
 ## Detecting silent input drift
@@ -192,13 +194,13 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                                     path size
-#> 1 C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/a.csv  221
-#> 2 C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/b.csv  303
-#> 3 C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/c.csv  161
+#> 1 C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/a.csv  221
+#> 2 C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/b.csv  303
+#> 3 C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/c.csv  161
 #>                 mtime
-#> 1 2026-04-29 17:55:37
-#> 2 2026-04-29 17:55:37
-#> 3 2026-04-29 17:55:37
+#> 1 2026-05-02 21:03:43
+#> 2 2026-05-02 21:03:43
+#> 3 2026-05-02 21:03:43
 ```
 
 `diff_inputs()` compares two runs and tells you which referenced files
@@ -215,11 +217,15 @@ diff_inputs(run0, run1)
 #>   Unchanged: 2
 #>   Removed:   0
 #>   Added:     0
+#>   Cases affected: 1
 #> 
 #> Changed files:
-#>   C:/Users/rheri/AppData/Local/Temp/RtmpS2TaF4/src/a.csv
+#>   C:/Users/rheri/AppData/Local/Temp/RtmpC4WWVN/src/a.csv
 #>       size:  221 B -> 4.1 KB
-#>       mtime: 2026-04-29 17:55:37 -> 2026-04-29 17:55:37
+#>       mtime: 2026-05-02 21:03:43 -> 2026-05-02 21:03:43
+#> 
+#> Cases affected (use rerun_affected() to re-run):
+#>   case_0001
 ```
 
 The default method is `"stat"` (size + mtime). It detects every
@@ -292,4 +298,5 @@ and roadmap.
 
 ## License
 
-MIT. See [LICENSE.md](LICENSE.md).
+MIT. See
+[LICENSE.md](https://github.com/danielrak/genproc/blob/master/LICENSE.md).
