@@ -9,8 +9,10 @@
 #' - stable case IDs linking log rows to mask rows
 #'
 #' The *logged* and *reproducibility* layers are always active and
-#' cannot be disabled. The *parallel* layer is optional: pass a
-#' [parallel_spec()] to `parallel` to enable it.
+#' cannot be disabled. Three optional layers compose on top: *parallel*
+#' (pass a [parallel_spec()] to `parallel`), *non-blocking* (pass a
+#' [nonblocking_spec()] to `nonblocking`), and *progress monitoring*
+#' (wrap the call in `progressr::with_progress()`).
 #'
 #' @param f A function to apply to each row of the mask. Each formal
 #'   of `f` should correspond to a column in `mask` (or have a default
@@ -58,15 +60,19 @@
 #'       `traceback`, and `duration_secs`.}
 #'     \item{reproducibility}{A list of environment information
 #'       captured at run start (R version, packages, OS, locale,
-#'       timezone, mask snapshot, parallel spec if any).
-#'       See `capture_reproducibility()`.}
+#'       timezone, mask snapshot, parallel and non-blocking specs if
+#'       any, and `inputs` — a stat-based fingerprint of every input
+#'       file referenced by the mask). See `capture_reproducibility()`.}
 #'     \item{n_success}{Integer, number of successful cases.}
 #'     \item{n_error}{Integer, number of failed cases.}
 #'     \item{duration_total_secs}{Numeric, total wall-clock time for
 #'       the entire run.}
-#'     \item{status}{Character. `"done"` for synchronous runs.
-#'       Future execution layers (non-blocking) may return
-#'       `"running"` or `"error"` here.}
+#'     \item{status}{Character. `"done"` for a synchronous run that
+#'       has completed; `"running"` for a non-blocking run whose
+#'       future has not resolved yet; `"done (not collected)"` for a
+#'       non-blocking run whose future has resolved but whose result
+#'       has not been collected via [await()] yet; `"error"` when the
+#'       background run errored out.}
 #'   }
 #'
 #'   The `genproc_result` class is designed for forward compatibility.
@@ -174,28 +180,37 @@
 #' result$log
 #'
 #' # One-off parallel call: genproc installs a temporary multisession
-#' # plan and restores the previous one on exit.
-#' \dontrun{
+#' # plan and restores the previous one on exit. Capped at 2 workers
+#' # to comply with the CRAN policy on parallelism in examples.
+#' \donttest{
 #'   result <- genproc(
-#'     f = slow_function,
-#'     mask = big_mask,
-#'     parallel = parallel_spec(workers = 4)
+#'     f = function(x) x * 2,
+#'     mask = data.frame(x = 1:4),
+#'     parallel = parallel_spec(workers = 2)
 #'   )
+#'   result$log
 #' }
 #'
 #' # Non-blocking + parallel composed: launch in the background,
 #' # keep the console, collect later with await().
-#' \dontrun{
+#' \donttest{
 #'   job <- genproc(
-#'     f = slow_function,
-#'     mask = big_mask,
-#'     parallel    = parallel_spec(workers = 6),
+#'     f = function(x) x * 2,
+#'     mask = data.frame(x = 1:4),
+#'     parallel    = parallel_spec(workers = 2),
 #'     nonblocking = nonblocking_spec()
 #'   )
 #'   status(job)         # "running" until the future resolves
 #'   job <- await(job)   # blocks; idempotent on already-resolved jobs
 #'   job$log
 #' }
+#'
+#' @seealso
+#'   Optional execution layers: [parallel_spec()], [nonblocking_spec()],
+#'   [status()], [await()].
+#'   Inspecting a result: [errors()], [summary.genproc_result()],
+#'   [rerun_failed()].
+#'   Reproducibility tooling: [diff_inputs()], [rerun_affected()].
 #'
 #' @export
 genproc <- function(f, mask, f_mapping = NULL, parallel = NULL,

@@ -70,15 +70,19 @@ parameter values, plus \code{case_id}, \code{success}, \code{error_message},
 \code{traceback}, and \code{duration_secs}.}
 \item{reproducibility}{A list of environment information
 captured at run start (R version, packages, OS, locale,
-timezone, mask snapshot, parallel spec if any).
-See \code{capture_reproducibility()}.}
+timezone, mask snapshot, parallel and non-blocking specs if
+any, and \code{inputs} — a stat-based fingerprint of every input
+file referenced by the mask). See \code{capture_reproducibility()}.}
 \item{n_success}{Integer, number of successful cases.}
 \item{n_error}{Integer, number of failed cases.}
 \item{duration_total_secs}{Numeric, total wall-clock time for
 the entire run.}
-\item{status}{Character. \code{"done"} for synchronous runs.
-Future execution layers (non-blocking) may return
-\code{"running"} or \code{"error"} here.}
+\item{status}{Character. \code{"done"} for a synchronous run that
+has completed; \code{"running"} for a non-blocking run whose
+future has not resolved yet; \code{"done (not collected)"} for a
+non-blocking run whose future has resolved but whose result
+has not been collected via \code{\link[=await]{await()}} yet; \code{"error"} when the
+background run errored out.}
 }
 
 The \code{genproc_result} class is designed for forward compatibility.
@@ -101,8 +105,10 @@ per row of the mask, and returns a structured result with:
 }
 \details{
 The \emph{logged} and \emph{reproducibility} layers are always active and
-cannot be disabled. The \emph{parallel} layer is optional: pass a
-\code{\link[=parallel_spec]{parallel_spec()}} to \code{parallel} to enable it.
+cannot be disabled. Three optional layers compose on top: \emph{parallel}
+(pass a \code{\link[=parallel_spec]{parallel_spec()}} to \code{parallel}), \emph{non-blocking} (pass a
+\code{\link[=nonblocking_spec]{nonblocking_spec()}} to \code{nonblocking}), and \emph{progress monitoring}
+(wrap the call in \code{progressr::with_progress()}).
 \subsection{Execution model}{
 
 Cases are executed \strong{sequentially} in row order by default. Supply
@@ -206,22 +212,24 @@ result <- genproc(
 result$log
 
 # One-off parallel call: genproc installs a temporary multisession
-# plan and restores the previous one on exit.
-\dontrun{
+# plan and restores the previous one on exit. Capped at 2 workers
+# to comply with the CRAN policy on parallelism in examples.
+\donttest{
   result <- genproc(
-    f = slow_function,
-    mask = big_mask,
-    parallel = parallel_spec(workers = 4)
+    f = function(x) x * 2,
+    mask = data.frame(x = 1:4),
+    parallel = parallel_spec(workers = 2)
   )
+  result$log
 }
 
 # Non-blocking + parallel composed: launch in the background,
 # keep the console, collect later with await().
-\dontrun{
+\donttest{
   job <- genproc(
-    f = slow_function,
-    mask = big_mask,
-    parallel    = parallel_spec(workers = 6),
+    f = function(x) x * 2,
+    mask = data.frame(x = 1:4),
+    parallel    = parallel_spec(workers = 2),
     nonblocking = nonblocking_spec()
   )
   status(job)         # "running" until the future resolves
@@ -229,4 +237,11 @@ result$log
   job$log
 }
 
+}
+\seealso{
+Optional execution layers: \code{\link[=parallel_spec]{parallel_spec()}}, \code{\link[=nonblocking_spec]{nonblocking_spec()}},
+\code{\link[=status]{status()}}, \code{\link[=await]{await()}}.
+Inspecting a result: \code{\link[=errors]{errors()}}, \code{\link[=summary.genproc_result]{summary.genproc_result()}},
+\code{\link[=rerun_failed]{rerun_failed()}}.
+Reproducibility tooling: \code{\link[=diff_inputs]{diff_inputs()}}, \code{\link[=rerun_affected]{rerun_affected()}}.
 }

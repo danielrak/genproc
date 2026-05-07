@@ -155,7 +155,7 @@ test_that("actual multisession run: parity with sequential, 2 workers", {
   # installed packages. devtools::load_all() does NOT install, so this
   # test is skipped in dev mode — run it after R CMD INSTALL.
   skip_if_not(
-    "genproc" %in% rownames(utils::installed.packages()),
+    nzchar(system.file(package = "genproc")),
     "genproc not installed — skip (multisession needs installed pkg)"
   )
 

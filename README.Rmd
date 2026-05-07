@@ -255,7 +255,7 @@ job <- genproc(
   nonblocking = nonblocking_spec()
 )
 
-status(job)        # "running" or "done"
+status(job)        # "running", "done (not collected)", "done", or "error"
 job <- await(job)  # blocks until resolution
 job$log
 ```

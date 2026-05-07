@@ -51,15 +51,23 @@ whole mask. \code{rerun_affected()} produces a smaller run that
 refreshes only the impacted outputs.
 }
 \examples{
-\dontrun{
-  r0 <- genproc(my_fn, my_mask)
-  # ... time passes, some upstream files change ...
-  r1 <- genproc(my_fn, my_mask)
+\donttest{
+  # Set up a tiny workspace with one tracked input file.
+  csv <- tempfile(fileext = ".csv")
+  write.csv(iris, csv, row.names = FALSE)
 
+  count_rows <- function(p) nrow(read.csv(p))
+
+  r0 <- genproc(count_rows, data.frame(p = csv))
+
+  # ... time passes, the upstream file is silently rewritten ...
+  write.csv(head(iris), csv, row.names = FALSE)
+
+  r1 <- genproc(count_rows, data.frame(p = csv))
   d <- diff_inputs(r0, r1)
   # d$cases_affected lists the case_ids whose inputs drifted.
 
-  refreshed <- rerun_affected(r0, d, f = my_fn)
+  refreshed <- rerun_affected(r0, d, f = count_rows)
   refreshed$log
 }
 

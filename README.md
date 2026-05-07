@@ -95,7 +95,7 @@ shape across runs:
 result
 #> genproc result
 #>   Status   : done 
-#>   Started  : 2026-05-02 21:50:03 CEST 
+#>   Started  : 2026-05-07 21:05:36 CEST 
 #>   Mode     : sequential 
 #>   Cases    : 3 ( 3 ok, 0 error )
 #>   Duration : 0.06 secs
@@ -111,8 +111,8 @@ and `traceback` are `NA` on this happy path:
 result$log[, c("case_id", "src_file", "dst_file",
                "success", "duration_secs")]
 #>     case_id src_file dst_file success duration_secs
-#> 1 case_0001    a.csv    a.rds    TRUE          0.03
-#> 2 case_0002    b.csv    b.rds    TRUE          0.01
+#> 1 case_0001    a.csv    a.rds    TRUE          0.02
+#> 2 case_0002    b.csv    b.rds    TRUE          0.00
 #> 3 case_0003    c.csv    c.rds    TRUE          0.00
 ```
 
@@ -127,7 +127,7 @@ mask_with_missing$src_file[2] <- "does_not_exist.csv"
 
 result2 <- genproc(convert, mask_with_missing)
 #> Warning in file(file, "rt"): cannot open file
-#> 'C:\Users\rheri\AppData\Local\Temp\RtmpeQ8Oil/src/does_not_exist.csv': No such
+#> 'C:\Users\rheri\AppData\Local\Temp\RtmpMjCXRi/src/does_not_exist.csv': No such
 #> file or directory
 errors(result2)[, c("case_id", "src_file", "error_message")]
 #>     case_id           src_file              error_message
@@ -149,13 +149,13 @@ Three helpers digest a result without touching `result$log` directly:
 ``` r
 errors(result2)        # data.frame of failed cases only
 #>     case_id                                                src_dir
-#> 2 case_0002 C:\\Users\\rheri\\AppData\\Local\\Temp\\RtmpeQ8Oil/src
+#> 2 case_0002 C:\\Users\\rheri\\AppData\\Local\\Temp\\RtmpMjCXRi/src
 #>             src_file                                                dst_dir
-#> 2 does_not_exist.csv C:\\Users\\rheri\\AppData\\Local\\Temp\\RtmpeQ8Oil/dst
+#> 2 does_not_exist.csv C:\\Users\\rheri\\AppData\\Local\\Temp\\RtmpMjCXRi/dst
 #>   dst_file success              error_message
 #> 2    b.rds   FALSE cannot open the connection
-#>                                                                                                                                                                                                                    traceback
-#> 2 1. process_file(text, output)\n2. read.csv(file.path(src_dir, src_file))\n3. read.table(file = file, header = header, sep = sep, quote = quote, dec = dec, fill = fill, comment.char = comment.ch ...\n4. file(file, "rt")
+#>                                                                                                                                                                                     traceback
+#> 2 1. read.csv(file.path(src_dir, src_file))\n2. read.table(file = file, header = header, sep = sep, quote = quote, dec = dec, fill = fill, comment.char = comment.ch ...\n3. file(file, "rt")
 #>   duration_secs
 #> 2             0
 summary(result2)       # printable digest: status, success rate,
@@ -163,7 +163,7 @@ summary(result2)       # printable digest: status, success rate,
 #>   Status     : done
 #>   Cases      : 3 (2 ok, 1 error)
 #>   Success    : 67%
-#>   Total time : 0.00s
+#>   Total time : 0.02s
 #>   Per case   : mean 0.000s, max 0.000s (slowest: case_0001)
 #> 
 #> Top errors:
@@ -191,7 +191,7 @@ sync:
 ``` r
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-05-02 21:50:03"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-05-07 21:05:36"
 #>  $ r_version    : chr "R version 4.5.1 (2025-06-13 ucrt)"
 #>  $ platform     : chr "x86_64-w64-mingw32"
 #>  $ os           : chr "Windows 10 x64"
@@ -236,13 +236,13 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                                     path size
-#> 1 C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/a.csv  221
-#> 2 C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/b.csv  303
-#> 3 C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/c.csv  161
+#> 1 C:/Users/rheri/AppData/Local/Temp/RtmpMjCXRi/src/a.csv  221
+#> 2 C:/Users/rheri/AppData/Local/Temp/RtmpMjCXRi/src/b.csv  303
+#> 3 C:/Users/rheri/AppData/Local/Temp/RtmpMjCXRi/src/c.csv  161
 #>                 mtime
-#> 1 2026-05-02 21:50:03
-#> 2 2026-05-02 21:50:03
-#> 3 2026-05-02 21:50:03
+#> 1 2026-05-07 21:05:36
+#> 2 2026-05-07 21:05:36
+#> 3 2026-05-07 21:05:36
 ```
 
 `diff_inputs()` compares two runs and tells you which referenced files
@@ -262,9 +262,9 @@ diff_inputs(run0, run1)
 #>   Cases affected: 1
 #> 
 #> Changed files:
-#>   C:/Users/rheri/AppData/Local/Temp/RtmpeQ8Oil/src/a.csv
+#>   C:/Users/rheri/AppData/Local/Temp/RtmpMjCXRi/src/a.csv
 #>       size:  221 B -> 4.1 KB
-#>       mtime: 2026-05-02 21:50:03 -> 2026-05-02 21:50:03
+#>       mtime: 2026-05-07 21:05:36 -> 2026-05-07 21:05:36
 #> 
 #> Cases affected (use rerun_affected() to re-run):
 #>   case_0001
@@ -305,7 +305,7 @@ job <- genproc(
   nonblocking = nonblocking_spec()
 )
 
-status(job)        # "running" or "done"
+status(job)        # "running", "done (not collected)", "done", or "error"
 job <- await(job)  # blocks until resolution
 job$log
 ```

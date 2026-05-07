@@ -1,3 +1,26 @@
+## Resubmission
+
+This is a resubmission addressing the reviewer feedback received on
+2026-05-02. Changes since the previous submission:
+
+* DESCRIPTION: removed single quotes around terms that are not
+  package or software names (`for`, `lapply()`, `pmap()`,
+  `diff_inputs()`); kept single quotes only around external package
+  names (`'future'`, `'purrr'`).
+* DESCRIPTION: added a reference to the `future` framework in the
+  Description field — Bengtsson (2021) <doi:10.32614/RJ-2021-048>.
+* DESCRIPTION: added `Language: en-US`.
+* All `\dontrun{}` blocks (5 occurrences in `genproc.Rd`,
+  `nonblocking_spec.Rd`, `rerun_failed.Rd`, `rerun_affected.Rd`)
+  replaced with `\donttest{}`. Examples were rewritten to be
+  self-contained where they previously referenced placeholder
+  symbols. The parallel/multisession examples are capped at 2
+  workers per CRAN policy on parallelism in examples.
+* Replaced `installed.packages()` calls in two test files with
+  `nzchar(system.file(package = "genproc"))`, per the
+  `installed.packages()` help page note discouraging its use for
+  package-presence checks.
+
 ## Test environments
 
 * local Windows 10 install, R 4.5.x — passed (723 tests)

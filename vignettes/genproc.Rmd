@@ -24,7 +24,7 @@ invisible(tryCatch(
 Sys.setenv(LANGUAGE = "en")
 ```
 
-The `README` introduces the four layers on a minimal example. This
+The `README` introduces the five layers on a minimal example. This
 vignette walks through the pieces a user needs once they start
 depending on `genproc` for real work: the shape of the result, how
 errors are reported, how the optional layers compose, and what the
@@ -81,8 +81,10 @@ names(result)
   start (see below).
 - `n_success`, `n_error`: summary counts.
 - `duration_total_secs`: total wall-clock time.
-- `status`: `"done"` for a synchronous run, `"running"` or
-  `"error"` for a non-blocking run before `await()`.
+- `status`: `"done"` for a completed synchronous run; for a
+  non-blocking run, one of `"running"` (future not resolved yet),
+  `"done (not collected)"` (future resolved but result not yet
+  collected via `await()`), `"done"` (collected), or `"error"`.
 
 These fields are guaranteed stable across minor versions; new
 fields may be added (e.g. `worker_id` for parallel runs), but
@@ -245,10 +247,11 @@ result_broken$n_success
 result_broken$n_error
 ```
 
-The failing row carries the error message and a filtered traceback:
+The failing row carries the error message and a filtered traceback.
+The `errors()` helper subsets `log` on `success == FALSE`:
 
 ```{r broken-row}
-bad <- result_broken$log[!result_broken$log$success, ]
+bad <- errors(result_broken)
 bad$error_message
 cat(bad$traceback[1], "\n")
 ```
@@ -264,6 +267,65 @@ Restore the file for subsequent sections:
 ```{r restore}
 write.csv(head(mtcars), file.path(src_dir, "b.csv"), row.names = FALSE)
 ```
+
+## Inspecting and re-running a result
+
+Three helpers digest a `genproc_result` without touching `result$log`
+directly.
+
+**`errors(result)`** returns the subset of failed cases as a
+data.frame:
+
+```{r inspect-errors, eval = FALSE}
+errors(result_broken)
+```
+
+**`summary(result)`** dispatches to `summary.genproc_result()` and
+returns a printable digest with the run status, success rate,
+duration statistics (mean / max / slowest case_id) and the top
+recurring error messages:
+
+```{r inspect-summary}
+summary(result_broken)
+```
+
+The summary object is a list — the printed view is rendered by
+`print.genproc_result_summary()` for human reading; the underlying
+fields (`status`, `success_rate`, `duration_stats`, `top_errors`)
+are programmatically accessible too.
+
+Two more helpers close the loop by **re-running a targeted subset**.
+Their `case_id`s are local to the subset (re-numbered starting at
+`case_0001`); the link back to the original run is via the matching
+rows of `r0$reproducibility$mask_snapshot`.
+
+**`rerun_failed(r0, f)`** re-runs only the cases that failed in `r0`
+— useful after fixing the function or the input:
+
+```{r inspect-rerun-failed, eval = FALSE}
+# Re-run with a hardened f that handles the missing file gracefully.
+result_fixed <- rerun_failed(
+  result_broken,
+  f = function(src_dir, src_file, dst_dir, dst_file) {
+    in_path <- file.path(src_dir, src_file)
+    if (!file.exists(in_path)) return(NA)
+    df <- read.csv(in_path)
+    saveRDS(df, file.path(dst_dir, dst_file))
+  }
+)
+```
+
+**`rerun_affected(r0, diff, f)`** re-runs only the cases referenced
+by a `diff_inputs()` result — the natural action after detecting
+that some upstream input files have drifted:
+
+```{r inspect-rerun-affected, eval = FALSE}
+d <- diff_inputs(run0, run1)
+refreshed <- rerun_affected(run0, d, f = do_one)
+```
+
+This closes the reproducibility loop: detect drift → re-run only the
+cases whose inputs changed, not the whole mask.
 
 ## Building blocks: extracting `f` and the mask from a working example
 
@@ -408,7 +470,7 @@ chunking. To pin the master, pass an integer:
 
 ```{r nb-example, eval = FALSE}
 job <- genproc(convert, mask, nonblocking = nonblocking_spec())
-status(job)         # "running" or "done"
+status(job)         # "running", "done (not collected)", "done", or "error"
 job <- await(job)   # blocks until resolution
 job$log
 ```

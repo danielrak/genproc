@@ -71,10 +71,14 @@
 #' details.
 #'
 #' @examples
-#' # Launch in the background, keep the console
-#' \dontrun{
+#' # Launch in the background, keep the console.
+#' \donttest{
 #'   spec <- nonblocking_spec()
-#'   job <- genproc(f = slow_fn, mask = mask, nonblocking = spec)
+#'   job <- genproc(
+#'     f = function(x) x * 2,
+#'     mask = data.frame(x = 1:4),
+#'     nonblocking = spec
+#'   )
 #'   status(job)           # "running"
 #'   job <- await(job)     # blocks until done
 #'   job$log
