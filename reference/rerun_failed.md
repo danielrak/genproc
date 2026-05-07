@@ -65,8 +65,12 @@ r0 <- genproc(
   mask = data.frame(x = 1:6)
 )
 # 3 cases failed (the even ones). After fixing f, retry only those:
-if (FALSE) { # \dontrun{
+# \donttest{
   r1 <- rerun_failed(r0, f = function(x) abs(x))
   r1$log
-} # }
+#>     case_id x success error_message traceback duration_secs
+#> 1 case_0001 2    TRUE          <NA>      <NA>             0
+#> 2 case_0002 4    TRUE          <NA>      <NA>             0
+#> 3 case_0003 6    TRUE          <NA>      <NA>             0
+# }
 ```

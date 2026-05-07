@@ -1,6 +1,6 @@
 # genproc: deep dive
 
-The `README` introduces the four layers on a minimal example. This
+The `README` introduces the five layers on a minimal example. This
 vignette walks through the pieces a user needs once they start depending
 on `genproc` for real work: the shape of the result, how errors are
 reported, how the optional layers compose, and what the current edges
@@ -63,9 +63,12 @@ names(result)
   below).
 - `n_success`, `n_error`: summary counts.
 - `duration_total_secs`: total wall-clock time.
-- `status`: `"done"` for a synchronous run, `"running"` or `"error"` for
-  a non-blocking run before
-  [`await()`](https://danielrak.github.io/genproc/reference/await.md).
+- `status`: `"done"` for a completed synchronous run; for a non-blocking
+  run, one of `"running"` (future not resolved yet),
+  `"done (not collected)"` (future resolved but result not yet collected
+  via
+  [`await()`](https://danielrak.github.io/genproc/reference/await.md)),
+  `"done"` (collected), or `"error"`.
 
 These fields are guaranteed stable across minor versions; new fields may
 be added (e.g. `worker_id` for parallel runs), but existing ones will
@@ -79,17 +82,17 @@ Column order is designed for a human scanning a run:
 
 result$log
 #>     case_id                              src_dir src_file
-#> 1 case_0001 /tmp/RtmpkpZKZ7/genproc-vignette-src    a.csv
-#> 2 case_0002 /tmp/RtmpkpZKZ7/genproc-vignette-src    b.csv
-#> 3 case_0003 /tmp/RtmpkpZKZ7/genproc-vignette-src    c.csv
+#> 1 case_0001 /tmp/RtmpWTwkVK/genproc-vignette-src    a.csv
+#> 2 case_0002 /tmp/RtmpWTwkVK/genproc-vignette-src    b.csv
+#> 3 case_0003 /tmp/RtmpWTwkVK/genproc-vignette-src    c.csv
 #>                                dst_dir dst_file success error_message traceback
-#> 1 /tmp/RtmpkpZKZ7/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
-#> 2 /tmp/RtmpkpZKZ7/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
-#> 3 /tmp/RtmpkpZKZ7/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
+#> 1 /tmp/RtmpWTwkVK/genproc-vignette-dst    a.rds    TRUE          <NA>      <NA>
+#> 2 /tmp/RtmpWTwkVK/genproc-vignette-dst    b.rds    TRUE          <NA>      <NA>
+#> 3 /tmp/RtmpWTwkVK/genproc-vignette-dst    c.rds    TRUE          <NA>      <NA>
 #>   duration_secs
 #> 1         0.001
-#> 2         0.002
-#> 3         0.001
+#> 2         0.001
+#> 3         0.000
 ```
 
 `case_id` is stable and index-based (`case_0001`, `case_0002`, …) for
@@ -102,7 +105,7 @@ of the mask can be reordered between runs.
 
 str(result$reproducibility, max.level = 1)
 #> List of 11
-#>  $ timestamp    : POSIXct[1:1], format: "2026-05-02 20:17:44"
+#>  $ timestamp    : POSIXct[1:1], format: "2026-05-07 19:11:11"
 #>  $ r_version    : chr "R version 4.6.0 (2026-04-24)"
 #>  $ platform     : chr "x86_64-pc-linux-gnu"
 #>  $ os           : chr "Linux 6.17.0-1010-azure"
@@ -186,9 +189,9 @@ do_one <- function(csv_in) nrow(read.csv(csv_in))
 run0 <- genproc(do_one, mask_paths)
 run0$reproducibility$inputs$files
 #>                                         path size               mtime
-#> 1 /tmp/RtmpkpZKZ7/genproc-vignette-src/a.csv  214 2026-05-02 20:17:44
-#> 2 /tmp/RtmpkpZKZ7/genproc-vignette-src/b.csv  296 2026-05-02 20:17:44
-#> 3 /tmp/RtmpkpZKZ7/genproc-vignette-src/c.csv  154 2026-05-02 20:17:44
+#> 1 /tmp/RtmpWTwkVK/genproc-vignette-src/a.csv  214 2026-05-07 19:11:11
+#> 2 /tmp/RtmpWTwkVK/genproc-vignette-src/b.csv  296 2026-05-07 19:11:11
+#> 3 /tmp/RtmpWTwkVK/genproc-vignette-src/c.csv  154 2026-05-07 19:11:11
 ```
 
 #### Shared inputs are deduplicated
@@ -254,9 +257,9 @@ diff_inputs(run0, run1)
 #>   Cases affected: 1
 #> 
 #> Changed files:
-#>   /tmp/RtmpkpZKZ7/genproc-vignette-src/a.csv
+#>   /tmp/RtmpWTwkVK/genproc-vignette-src/a.csv
 #>       size:  214 B -> 3.9 KB
-#>       mtime: 2026-05-02 20:17:44 -> 2026-05-02 20:17:44
+#>       mtime: 2026-05-07 19:11:11 -> 2026-05-07 19:11:11
 #> 
 #> Cases affected (use rerun_affected() to re-run):
 #>   case_0001
@@ -284,7 +287,7 @@ file.remove(file.path(src_dir, "b.csv"))
 #> [1] TRUE
 result_broken <- genproc(convert, mask)
 #> Warning in file(file, "rt"): cannot open file
-#> '/tmp/RtmpkpZKZ7/genproc-vignette-src/b.csv': No such file or directory
+#> '/tmp/RtmpWTwkVK/genproc-vignette-src/b.csv': No such file or directory
 
 result_broken$n_success
 #> [1] 2
@@ -292,11 +295,13 @@ result_broken$n_error
 #> [1] 1
 ```
 
-The failing row carries the error message and a filtered traceback:
+The failing row carries the error message and a filtered traceback. The
+[`errors()`](https://danielrak.github.io/genproc/reference/errors.md)
+helper subsets `log` on `success == FALSE`:
 
 ``` r
 
-bad <- result_broken$log[!result_broken$log$success, ]
+bad <- errors(result_broken)
 bad$error_message
 #> [1] "cannot open the connection"
 cat(bad$traceback[1], "\n")
@@ -320,6 +325,79 @@ Restore the file for subsequent sections:
 
 write.csv(head(mtcars), file.path(src_dir, "b.csv"), row.names = FALSE)
 ```
+
+## Inspecting and re-running a result
+
+Three helpers digest a `genproc_result` without touching `result$log`
+directly.
+
+**`errors(result)`** returns the subset of failed cases as a data.frame:
+
+``` r
+
+errors(result_broken)
+```
+
+**`summary(result)`** dispatches to
+[`summary.genproc_result()`](https://danielrak.github.io/genproc/reference/summary.genproc_result.md)
+and returns a printable digest with the run status, success rate,
+duration statistics (mean / max / slowest case_id) and the top recurring
+error messages:
+
+``` r
+
+summary(result_broken)
+#> genproc result summary
+#>   Status     : done
+#>   Cases      : 3 (2 ok, 1 error)
+#>   Success    : 67%
+#>   Total time : 0.02s
+#>   Per case   : mean 0.001s, max 0.001s (slowest: case_0001)
+#> 
+#> Top errors:
+#>     1x  cannot open the connection
+```
+
+The summary object is a list — the printed view is rendered by
+[`print.genproc_result_summary()`](https://danielrak.github.io/genproc/reference/print.genproc_result_summary.md)
+for human reading; the underlying fields (`status`, `success_rate`,
+`duration_stats`, `top_errors`) are programmatically accessible too.
+
+Two more helpers close the loop by **re-running a targeted subset**.
+Their `case_id`s are local to the subset (re-numbered starting at
+`case_0001`); the link back to the original run is via the matching rows
+of `r0$reproducibility$mask_snapshot`.
+
+**`rerun_failed(r0, f)`** re-runs only the cases that failed in `r0` —
+useful after fixing the function or the input:
+
+``` r
+
+# Re-run with a hardened f that handles the missing file gracefully.
+result_fixed <- rerun_failed(
+  result_broken,
+  f = function(src_dir, src_file, dst_dir, dst_file) {
+    in_path <- file.path(src_dir, src_file)
+    if (!file.exists(in_path)) return(NA)
+    df <- read.csv(in_path)
+    saveRDS(df, file.path(dst_dir, dst_file))
+  }
+)
+```
+
+**`rerun_affected(r0, diff, f)`** re-runs only the cases referenced by a
+[`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md)
+result — the natural action after detecting that some upstream input
+files have drifted:
+
+``` r
+
+d <- diff_inputs(run0, run1)
+refreshed <- rerun_affected(run0, d, f = do_one)
+```
+
+This closes the reproducibility loop: detect drift → re-run only the
+cases whose inputs changed, not the whole mask.
 
 ## Building blocks: extracting `f` and the mask from a working example
 
@@ -350,10 +428,10 @@ example <- expression({
 fn <- from_example_to_function(example)
 formals(fn)
 #> $param_1
-#> [1] "/tmp/RtmpkpZKZ7/genproc-vignette-src/a.csv"
+#> [1] "/tmp/RtmpWTwkVK/genproc-vignette-src/a.csv"
 #> 
 #> $param_2
-#> [1] "/tmp/RtmpkpZKZ7/genproc-vignette-dst/a-from-example.rds"
+#> [1] "/tmp/RtmpWTwkVK/genproc-vignette-dst/a-from-example.rds"
 ```
 
 ### 2. `from_function_to_mask()` — function signature to mask template
@@ -368,9 +446,9 @@ full mask.
 mask_template <- from_function_to_mask(fn)
 mask_template
 #>                                      param_1
-#> 1 /tmp/RtmpkpZKZ7/genproc-vignette-src/a.csv
+#> 1 /tmp/RtmpWTwkVK/genproc-vignette-src/a.csv
 #>                                                   param_2
-#> 1 /tmp/RtmpkpZKZ7/genproc-vignette-dst/a-from-example.rds
+#> 1 /tmp/RtmpWTwkVK/genproc-vignette-dst/a-from-example.rds
 ```
 
 ### 3. `rename_function_params()` — give the parameters domain names
@@ -386,10 +464,10 @@ fn_named <- rename_function_params(
 )
 formals(fn_named)
 #> $input_path
-#> [1] "/tmp/RtmpkpZKZ7/genproc-vignette-src/a.csv"
+#> [1] "/tmp/RtmpWTwkVK/genproc-vignette-src/a.csv"
 #> 
 #> $output_path
-#> [1] "/tmp/RtmpkpZKZ7/genproc-vignette-dst/a-from-example.rds"
+#> [1] "/tmp/RtmpWTwkVK/genproc-vignette-dst/a-from-example.rds"
 ```
 
 Putting it together: a renamed function plus a manually-built mask that
@@ -492,7 +570,7 @@ pin the master, pass an integer: `parallel_spec(seed = 42L)`.
 ``` r
 
 job <- genproc(convert, mask, nonblocking = nonblocking_spec())
-status(job)         # "running" or "done"
+status(job)         # "running", "done (not collected)", "done", or "error"
 job <- await(job)   # blocks until resolution
 job$log
 ```

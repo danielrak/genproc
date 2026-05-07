@@ -75,15 +75,27 @@ impacted outputs.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-  r0 <- genproc(my_fn, my_mask)
-  # ... time passes, some upstream files change ...
-  r1 <- genproc(my_fn, my_mask)
+# \donttest{
+  # Set up a tiny workspace with one tracked input file.
+  csv <- tempfile(fileext = ".csv")
+  write.csv(iris, csv, row.names = FALSE)
 
+  count_rows <- function(p) nrow(read.csv(p))
+
+  r0 <- genproc(count_rows, data.frame(p = csv))
+
+  # ... time passes, the upstream file is silently rewritten ...
+  write.csv(head(iris), csv, row.names = FALSE)
+
+  r1 <- genproc(count_rows, data.frame(p = csv))
   d <- diff_inputs(r0, r1)
   # d$cases_affected lists the case_ids whose inputs drifted.
 
-  refreshed <- rerun_affected(r0, d, f = my_fn)
+  refreshed <- rerun_affected(r0, d, f = count_rows)
   refreshed$log
-} # }
+#>     case_id                                    p success error_message
+#> 1 case_0001 /tmp/Rtmp9w6qkV/file1a1b55c4cf9e.csv    TRUE          <NA>
+#>   traceback duration_secs
+#> 1      <NA>         0.001
+# }
 ```

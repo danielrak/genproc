@@ -105,9 +105,9 @@ diff_inputs(r0, r1)
 #>   Cases affected: 1
 #> 
 #> Changed files:
-#>   /tmp/RtmpsPB9k2/diff-inputs-demo/a.csv
+#>   /tmp/Rtmp9w6qkV/diff-inputs-demo/a.csv
 #>       size:  214 B -> 3.9 KB
-#>       mtime: 2026-05-02 20:17:40 -> 2026-05-02 20:17:40
+#>       mtime: 2026-05-07 19:11:00 -> 2026-05-07 19:11:00
 #> 
 #> Cases affected (use rerun_affected() to re-run):
 #>   case_0001

@@ -112,8 +112,10 @@ An object of class `genproc_result` (a named list) with components:
 - reproducibility:
 
   A list of environment information captured at run start (R version,
-  packages, OS, locale, timezone, mask snapshot, parallel spec if any).
-  See `capture_reproducibility()`.
+  packages, OS, locale, timezone, mask snapshot, parallel and
+  non-blocking specs if any, and `inputs` — a stat-based fingerprint of
+  every input file referenced by the mask). See
+  `capture_reproducibility()`.
 
 - n_success:
 
@@ -129,8 +131,12 @@ An object of class `genproc_result` (a named list) with components:
 
 - status:
 
-  Character. `"done"` for synchronous runs. Future execution layers
-  (non-blocking) may return `"running"` or `"error"` here.
+  Character. `"done"` for a synchronous run that has completed;
+  `"running"` for a non-blocking run whose future has not resolved yet;
+  `"done (not collected)"` for a non-blocking run whose future has
+  resolved but whose result has not been collected via
+  [`await()`](https://danielrak.github.io/genproc/reference/await.md)
+  yet; `"error"` when the background run errored out.
 
 The `genproc_result` class is designed for forward compatibility.
 Existing fields (`log`, `reproducibility`, `n_success`, `n_error`,
@@ -142,9 +148,12 @@ remove or rename existing ones.
 ## Details
 
 The *logged* and *reproducibility* layers are always active and cannot
-be disabled. The *parallel* layer is optional: pass a
+be disabled. Three optional layers compose on top: *parallel* (pass a
 [`parallel_spec()`](https://danielrak.github.io/genproc/reference/parallel_spec.md)
-to `parallel` to enable it.
+to `parallel`), *non-blocking* (pass a
+[`nonblocking_spec()`](https://danielrak.github.io/genproc/reference/nonblocking_spec.md)
+to `nonblocking`), and *progress monitoring* (wrap the call in
+[`progressr::with_progress()`](https://progressr.futureverse.org/reference/with_progress.html)).
 
 ### Execution model
 
@@ -231,6 +240,21 @@ will cause an error before execution starts.
 Extra columns in the mask (not matching any parameter) are silently
 ignored.
 
+## See also
+
+Optional execution layers:
+[`parallel_spec()`](https://danielrak.github.io/genproc/reference/parallel_spec.md),
+[`nonblocking_spec()`](https://danielrak.github.io/genproc/reference/nonblocking_spec.md),
+[`status()`](https://danielrak.github.io/genproc/reference/status.md),
+[`await()`](https://danielrak.github.io/genproc/reference/await.md).
+Inspecting a result:
+[`errors()`](https://danielrak.github.io/genproc/reference/errors.md),
+[`summary.genproc_result()`](https://danielrak.github.io/genproc/reference/summary.genproc_result.md),
+[`rerun_failed()`](https://danielrak.github.io/genproc/reference/rerun_failed.md).
+Reproducibility tooling:
+[`diff_inputs()`](https://danielrak.github.io/genproc/reference/diff_inputs.md),
+[`rerun_affected()`](https://danielrak.github.io/genproc/reference/rerun_affected.md).
+
 ## Examples
 
 ``` r
@@ -246,26 +270,39 @@ result$log
 #> 3 case_0003 3 30    TRUE          <NA>      <NA>             0
 
 # One-off parallel call: genproc installs a temporary multisession
-# plan and restores the previous one on exit.
-if (FALSE) { # \dontrun{
+# plan and restores the previous one on exit. Capped at 2 workers
+# to comply with the CRAN policy on parallelism in examples.
+# \donttest{
   result <- genproc(
-    f = slow_function,
-    mask = big_mask,
-    parallel = parallel_spec(workers = 4)
+    f = function(x) x * 2,
+    mask = data.frame(x = 1:4),
+    parallel = parallel_spec(workers = 2)
   )
-} # }
+  result$log
+#>     case_id x success error_message traceback duration_secs
+#> 1 case_0001 1    TRUE          <NA>      <NA>             0
+#> 2 case_0002 2    TRUE          <NA>      <NA>             0
+#> 3 case_0003 3    TRUE          <NA>      <NA>             0
+#> 4 case_0004 4    TRUE          <NA>      <NA>             0
+# }
 
 # Non-blocking + parallel composed: launch in the background,
 # keep the console, collect later with await().
-if (FALSE) { # \dontrun{
+# \donttest{
   job <- genproc(
-    f = slow_function,
-    mask = big_mask,
-    parallel    = parallel_spec(workers = 6),
+    f = function(x) x * 2,
+    mask = data.frame(x = 1:4),
+    parallel    = parallel_spec(workers = 2),
     nonblocking = nonblocking_spec()
   )
   status(job)         # "running" until the future resolves
+#> [1] "running"
   job <- await(job)   # blocks; idempotent on already-resolved jobs
   job$log
-} # }
+#>     case_id x success error_message traceback duration_secs
+#> 1 case_0001 1    TRUE          <NA>      <NA>             0
+#> 2 case_0002 2    TRUE          <NA>      <NA>             0
+#> 3 case_0003 3    TRUE          <NA>      <NA>             0
+#> 4 case_0004 4    TRUE          <NA>      <NA>             0
+# }
 ```

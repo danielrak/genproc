@@ -81,14 +81,24 @@ for details.
 ## Examples
 
 ``` r
-# Launch in the background, keep the console
-if (FALSE) { # \dontrun{
+# Launch in the background, keep the console.
+# \donttest{
   spec <- nonblocking_spec()
-  job <- genproc(f = slow_fn, mask = mask, nonblocking = spec)
+  job <- genproc(
+    f = function(x) x * 2,
+    mask = data.frame(x = 1:4),
+    nonblocking = spec
+  )
   status(job)           # "running"
+#> [1] "running"
   job <- await(job)     # blocks until done
   job$log
-} # }
+#>     case_id x success error_message traceback duration_secs
+#> 1 case_0001 1    TRUE          <NA>      <NA>         0.001
+#> 2 case_0002 2    TRUE          <NA>      <NA>         0.000
+#> 3 case_0003 3    TRUE          <NA>      <NA>         0.000
+#> 4 case_0004 4    TRUE          <NA>      <NA>         0.000
+# }
 
 # Deterministic test: exercise the code path without real async
 spec <- nonblocking_spec(strategy = "sequential")
