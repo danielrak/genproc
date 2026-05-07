@@ -94,10 +94,10 @@ for details.
   job <- await(job)     # blocks until done
   job$log
 #>     case_id x success error_message traceback duration_secs
-#> 1 case_0001 1    TRUE          <NA>      <NA>         0.001
-#> 2 case_0002 2    TRUE          <NA>      <NA>         0.000
-#> 3 case_0003 3    TRUE          <NA>      <NA>         0.000
-#> 4 case_0004 4    TRUE          <NA>      <NA>         0.000
+#> 1 case_0001 1    TRUE          <NA>      <NA>             0
+#> 2 case_0002 2    TRUE          <NA>      <NA>             0
+#> 3 case_0003 3    TRUE          <NA>      <NA>             0
+#> 4 case_0004 4    TRUE          <NA>      <NA>             0
 # }
 
 # Deterministic test: exercise the code path without real async
