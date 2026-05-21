@@ -5,6 +5,7 @@
 
 <!-- badges: start -->
 
+[![CRAN status](https://www.r-pkg.org/badges/version/genproc)](https://CRAN.R-project.org/package=genproc)
 [![R-CMD-check](https://github.com/danielrak/genproc/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/danielrak/genproc/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
 coverage](https://codecov.io/gh/danielrak/genproc/graph/badge.svg)](https://app.codecov.io/gh/danielrak/genproc)
