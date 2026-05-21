@@ -2,6 +2,8 @@
 
 ## genproc 0.2.0
 
+CRAN release: 2026-05-12
+
 ### New features
 
 - [`genproc()`](https://danielrak.github.io/genproc/reference/genproc.md)

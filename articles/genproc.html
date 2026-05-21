@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>genproc: deep dive • genproc</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="genproc: deep dive">
 </head>
@@ -139,17 +139,17 @@ existing ones will never be removed or renamed.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span><span class="op">$</span><span class="va">log</span></span>
 <span><span class="co">#&gt;     case_id                              src_dir src_file</span></span>
-<span><span class="co">#&gt; 1 case_0001 /tmp/RtmpXivsRJ/genproc-vignette-src    a.csv</span></span>
-<span><span class="co">#&gt; 2 case_0002 /tmp/RtmpXivsRJ/genproc-vignette-src    b.csv</span></span>
-<span><span class="co">#&gt; 3 case_0003 /tmp/RtmpXivsRJ/genproc-vignette-src    c.csv</span></span>
+<span><span class="co">#&gt; 1 case_0001 /tmp/Rtmpm8JKRD/genproc-vignette-src    a.csv</span></span>
+<span><span class="co">#&gt; 2 case_0002 /tmp/Rtmpm8JKRD/genproc-vignette-src    b.csv</span></span>
+<span><span class="co">#&gt; 3 case_0003 /tmp/Rtmpm8JKRD/genproc-vignette-src    c.csv</span></span>
 <span><span class="co">#&gt;                                dst_dir dst_file success error_message traceback</span></span>
-<span><span class="co">#&gt; 1 /tmp/RtmpXivsRJ/genproc-vignette-dst    a.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 2 /tmp/RtmpXivsRJ/genproc-vignette-dst    b.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
-<span><span class="co">#&gt; 3 /tmp/RtmpXivsRJ/genproc-vignette-dst    c.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 1 /tmp/Rtmpm8JKRD/genproc-vignette-dst    a.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 2 /tmp/Rtmpm8JKRD/genproc-vignette-dst    b.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
+<span><span class="co">#&gt; 3 /tmp/Rtmpm8JKRD/genproc-vignette-dst    c.rds    TRUE          &lt;NA&gt;      &lt;NA&gt;</span></span>
 <span><span class="co">#&gt;   duration_secs</span></span>
 <span><span class="co">#&gt; 1         0.001</span></span>
 <span><span class="co">#&gt; 2         0.001</span></span>
-<span><span class="co">#&gt; 3         0.001</span></span></code></pre></div>
+<span><span class="co">#&gt; 3         0.000</span></span></code></pre></div>
 <p><code>case_id</code> is stable and index-based
 (<code>case_0001</code>, <code>case_0002</code>, …) for now. A
 content-based variant is on the roadmap, for use cases where rows of the
@@ -161,10 +161,10 @@ mask can be reordered between runs.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">result</span><span class="op">$</span><span class="va">reproducibility</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 11</span></span>
-<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-05-07 19:17:05"</span></span>
+<span><span class="co">#&gt;  $ timestamp    : POSIXct[1:1], format: "2026-05-21 17:20:21"</span></span>
 <span><span class="co">#&gt;  $ r_version    : chr "R version 4.6.0 (2026-04-24)"</span></span>
 <span><span class="co">#&gt;  $ platform     : chr "x86_64-pc-linux-gnu"</span></span>
-<span><span class="co">#&gt;  $ os           : chr "Linux 6.17.0-1010-azure"</span></span>
+<span><span class="co">#&gt;  $ os           : chr "Linux 6.17.0-1013-azure"</span></span>
 <span><span class="co">#&gt;  $ locale       : chr "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C.UTF-8;LC_COLLATE=C.UTF-8;LC_MONETARY=C.UTF-8;LC_MESSAGES=C;LC_PAPER=C.U"| __truncated__</span></span>
 <span><span class="co">#&gt;  $ timezone     : chr "UTC"</span></span>
 <span><span class="co">#&gt;  $ packages     : Named chr [1:33] "0.2.0" "0.6.39" "1.4.3" "2.6.1" ...</span></span>
@@ -256,9 +256,9 @@ that holds absolute paths directly:</p>
 <span><span class="va">run0</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">do_one</span>, <span class="va">mask_paths</span><span class="op">)</span></span>
 <span><span class="va">run0</span><span class="op">$</span><span class="va">reproducibility</span><span class="op">$</span><span class="va">inputs</span><span class="op">$</span><span class="va">files</span></span>
 <span><span class="co">#&gt;                                         path size               mtime</span></span>
-<span><span class="co">#&gt; 1 /tmp/RtmpXivsRJ/genproc-vignette-src/a.csv  214 2026-05-07 19:17:05</span></span>
-<span><span class="co">#&gt; 2 /tmp/RtmpXivsRJ/genproc-vignette-src/b.csv  296 2026-05-07 19:17:05</span></span>
-<span><span class="co">#&gt; 3 /tmp/RtmpXivsRJ/genproc-vignette-src/c.csv  154 2026-05-07 19:17:05</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 /tmp/Rtmpm8JKRD/genproc-vignette-src/a.csv  214 2026-05-21 17:20:21</span></span>
+<span><span class="co">#&gt; 2 /tmp/Rtmpm8JKRD/genproc-vignette-src/b.csv  296 2026-05-21 17:20:21</span></span>
+<span><span class="co">#&gt; 3 /tmp/Rtmpm8JKRD/genproc-vignette-src/c.csv  154 2026-05-21 17:20:21</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="shared-inputs-are-deduplicated">Shared inputs are deduplicated<a class="anchor" aria-label="anchor" href="#shared-inputs-are-deduplicated"></a>
@@ -327,9 +327,9 @@ contradictory intentions and the call should clarify.</p>
 <span><span class="co">#&gt;   Cases affected: 1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Changed files:</span></span>
-<span><span class="co">#&gt;   /tmp/RtmpXivsRJ/genproc-vignette-src/a.csv</span></span>
+<span><span class="co">#&gt;   /tmp/Rtmpm8JKRD/genproc-vignette-src/a.csv</span></span>
 <span><span class="co">#&gt;       size:  214 B -&gt; 3.9 KB</span></span>
-<span><span class="co">#&gt;       mtime: 2026-05-07 19:17:05 -&gt; 2026-05-07 19:17:05</span></span>
+<span><span class="co">#&gt;       mtime: 2026-05-21 17:20:21 -&gt; 2026-05-21 17:20:22</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Cases affected (use rerun_affected() to re-run):</span></span>
 <span><span class="co">#&gt;   case_0001</span></span></code></pre></div>
@@ -356,7 +356,7 @@ delete a source file between two runs:</p>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">result_broken</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genproc.html">genproc</a></span><span class="op">(</span><span class="va">convert</span>, <span class="va">mask</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in file(file, "rt"): cannot open file</span></span>
-<span><span class="co">#&gt; '/tmp/RtmpXivsRJ/genproc-vignette-src/b.csv': No such file or directory</span></span>
+<span><span class="co">#&gt; '/tmp/Rtmpm8JKRD/genproc-vignette-src/b.csv': No such file or directory</span></span>
 <span></span>
 <span><span class="va">result_broken</span><span class="op">$</span><span class="va">n_success</span></span>
 <span><span class="co">#&gt; [1] 2</span></span>
@@ -402,7 +402,7 @@ slowest case_id) and the top recurring error messages:</p>
 <span><span class="co">#&gt;   Cases      : 3 (2 ok, 1 error)</span></span>
 <span><span class="co">#&gt;   Success    : 67%</span></span>
 <span><span class="co">#&gt;   Total time : 0.02s</span></span>
-<span><span class="co">#&gt;   Per case   : mean 0.001s, max 0.002s (slowest: case_0002)</span></span>
+<span><span class="co">#&gt;   Per case   : mean 0.001s, max 0.001s (slowest: case_0002)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Top errors:</span></span>
 <span><span class="co">#&gt;     1x  cannot open the connection</span></span></code></pre></div>
@@ -471,10 +471,10 @@ function formals) are protected.</p>
 <span><span class="va">fn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/from_example_to_function.html">from_example_to_function</a></span><span class="op">(</span><span class="va">example</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/formals.html" class="external-link">formals</a></span><span class="op">(</span><span class="va">fn</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $param_1</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpXivsRJ/genproc-vignette-src/a.csv"</span></span>
+<span><span class="co">#&gt; [1] "/tmp/Rtmpm8JKRD/genproc-vignette-src/a.csv"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $param_2</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpXivsRJ/genproc-vignette-dst/a-from-example.rds"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/Rtmpm8JKRD/genproc-vignette-dst/a-from-example.rds"</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="from_function_to_mask-function-signature-to-mask-template">2. <code>from_function_to_mask()</code> — function signature to mask
@@ -487,9 +487,9 @@ template<a class="anchor" aria-label="anchor" href="#from_function_to_mask-funct
 <code class="sourceCode R"><span><span class="va">mask_template</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/from_function_to_mask.html">from_function_to_mask</a></span><span class="op">(</span><span class="va">fn</span><span class="op">)</span></span>
 <span><span class="va">mask_template</span></span>
 <span><span class="co">#&gt;                                      param_1</span></span>
-<span><span class="co">#&gt; 1 /tmp/RtmpXivsRJ/genproc-vignette-src/a.csv</span></span>
+<span><span class="co">#&gt; 1 /tmp/Rtmpm8JKRD/genproc-vignette-src/a.csv</span></span>
 <span><span class="co">#&gt;                                                   param_2</span></span>
-<span><span class="co">#&gt; 1 /tmp/RtmpXivsRJ/genproc-vignette-dst/a-from-example.rds</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 /tmp/Rtmpm8JKRD/genproc-vignette-dst/a-from-example.rds</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="rename_function_params-give-the-parameters-domain-names">3. <code>rename_function_params()</code> — give the parameters
@@ -505,10 +505,10 @@ is not edited.</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/formals.html" class="external-link">formals</a></span><span class="op">(</span><span class="va">fn_named</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $input_path</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpXivsRJ/genproc-vignette-src/a.csv"</span></span>
+<span><span class="co">#&gt; [1] "/tmp/Rtmpm8JKRD/genproc-vignette-src/a.csv"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $output_path</span></span>
-<span><span class="co">#&gt; [1] "/tmp/RtmpXivsRJ/genproc-vignette-dst/a-from-example.rds"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "/tmp/Rtmpm8JKRD/genproc-vignette-dst/a-from-example.rds"</span></span></code></pre></div>
 <p>Putting it together: a renamed function plus a manually-built mask
 that follows the same column names.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
