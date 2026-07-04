@@ -27,7 +27,7 @@
 #'   [status()], block with [await()]. Configured through
 #'   [nonblocking_spec()].
 #'
-#' Further layers are on the roadmap: monitored progress, error replay,
+#' Further layers are on the roadmap: error replay,
 #' content-hash input fingerprinting, content-based case identifiers.
 #' They will be composable with the default layers and opt-in.
 #'

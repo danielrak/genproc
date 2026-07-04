@@ -35,7 +35,7 @@ while the run continues in a background future. Poll with
 \code{\link[=nonblocking_spec]{nonblocking_spec()}}.
 }
 
-Further layers are on the roadmap: monitored progress, error replay,
+Further layers are on the roadmap: error replay,
 content-hash input fingerprinting, content-based case identifiers.
 They will be composable with the default layers and opt-in.
 

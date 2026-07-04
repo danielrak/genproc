@@ -70,6 +70,14 @@ The three optional layers:
 
 ## Installation
 
+Install the released version from CRAN:
+
+```r
+install.packages("genproc")
+```
+
+Or the development version from GitHub:
+
 ```r
 # install.packages("remotes")
 remotes::install_github("danielrak/genproc")
@@ -301,8 +309,8 @@ across the 0.x series — existing fields are guaranteed not to be
 removed or renamed. New fields and new optional layers may be
 added.
 
-The 0.2.0 release is the first public submission and is not yet
-on CRAN. Install from GitHub for now (see above).
+Version 0.2.0 is available on CRAN. The development version can be
+installed from GitHub (see above).
 
 ## Learn more
 
