@@ -93,9 +93,9 @@ impacted outputs.
 
   refreshed <- rerun_affected(r0, d, f = count_rows)
   refreshed$log
-#>     case_id                                    p success error_message
-#> 1 case_0001 /tmp/Rtmp7l8jH3/file19667d61fec9.csv    TRUE          <NA>
-#>   traceback duration_secs
-#> 1      <NA>             0
+#>     case_id                                   p success error_message traceback
+#> 1 case_0001 /tmp/RtmpK1P7mD/file1a4dfc8ed7c.csv    TRUE          <NA>      <NA>
+#>   duration_secs
+#> 1         0.001
 # }
 ```

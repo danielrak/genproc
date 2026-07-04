@@ -39,9 +39,9 @@ Two optional, composable layers can be enabled per call:
   Configured through
   [`nonblocking_spec()`](https://danielrak.github.io/genproc/reference/nonblocking_spec.md).
 
-Further layers are on the roadmap: monitored progress, error replay,
-content-hash input fingerprinting, content-based case identifiers. They
-will be composable with the default layers and opt-in.
+Further layers are on the roadmap: error replay, content-hash input
+fingerprinting, content-based case identifiers. They will be composable
+with the default layers and opt-in.
 
 This package has no Shiny dependency and is designed to be consumable by
 a future companion Shiny package.
